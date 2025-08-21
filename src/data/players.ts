@@ -200,12 +200,12 @@ export function calculateSimilarity(player1: Player, player2: Player): number {
   let totalSimilarity = 0;
   let totalWeight = 0;
   
-  // Age similarity (10% weight)
+  // Age similarity (5% weight)
   if (player1.age != null && player2.age != null) {
     const ageDiff = Math.abs(player1.age - player2.age);
     const ageSimilarity = Math.max(0, (8 - ageDiff) / 8);
-    totalSimilarity += ageSimilarity * 0.1;
-    totalWeight += 0.1;
+    totalSimilarity += ageSimilarity * 0.05;
+    totalWeight += 0.05;
   }
   
   // Minutes played similarity (5% weight) - helps compare players with similar game time
