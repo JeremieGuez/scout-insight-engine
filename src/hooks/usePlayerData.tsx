@@ -133,44 +133,74 @@ export function PlayerDataProvider({ children }: { children: ReactNode }) {
   const loadFromCSV = async (file: File) => {
     setIsLoading(true);
     setError(null);
+    console.log('🔍 Starting CSV import for file:', file.name, 'Size:', file.size);
 
     try {
       const text = await file.text();
+      console.log('📄 File read successfully, length:', text.length);
+      console.log('📄 First 500 characters:', text.substring(0, 500));
       
       Papa.parse<FBrefPlayerRow>(text, {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
+          console.log('✅ CSV parsing completed');
+          console.log('📊 Total rows parsed:', results.data.length);
+          console.log('🔍 First row sample:', results.data[0]);
+          
           if (results.errors.length > 0) {
-            console.warn('CSV parsing warnings:', results.errors);
+            console.warn('⚠️ CSV parsing warnings:', results.errors);
           }
 
           // Convert and deduplicate players
           const playerMap = new Map<string, Player>();
+          let processedCount = 0;
+          let skippedCount = 0;
           
           results.data.forEach((row, index) => {
-            if (!row.Player || !row.Squad) return;
+            if (!row.Player || !row.Squad) {
+              skippedCount++;
+              if (index < 5) console.log(`⏭️ Skipping row ${index}:`, row);
+              return;
+            }
             
-            const player = csvRowToPlayer(row, index);
-            const key = `${player.name}-${player.club}`;
-            
-            // Keep player with more minutes if duplicate
-            const existing = playerMap.get(key);
-            if (!existing || safeParseInt(row.Min) > safeParseInt(String(existing.goals + existing.assists))) {
-              playerMap.set(key, player);
+            try {
+              const player = csvRowToPlayer(row, index);
+              const key = `${player.name}-${player.club}`;
+              
+              // Keep player with more minutes if duplicate
+              const existing = playerMap.get(key);
+              if (!existing || safeParseInt(row.Min) > safeParseInt(String(existing.goals + existing.assists))) {
+                playerMap.set(key, player);
+              }
+              processedCount++;
+              
+              if (index < 3) console.log(`✅ Processed player ${index}:`, player.name, player.club, player.position);
+            } catch (err) {
+              console.error(`❌ Error processing row ${index}:`, err, row);
+              skippedCount++;
             }
           });
 
           const uniquePlayers = Array.from(playerMap.values());
+          console.log('🎯 Final result:', {
+            totalRowsInCSV: results.data.length,
+            processedPlayers: processedCount,
+            skippedRows: skippedCount,
+            uniquePlayersCreated: uniquePlayers.length
+          });
+          
           setPlayers(uniquePlayers);
           setIsLoading(false);
         },
         error: (error) => {
+          console.error('❌ Papa Parse error:', error);
           setError(`Failed to parse CSV: ${error.message}`);
           setIsLoading(false);
         }
       });
     } catch (err) {
+      console.error('❌ File reading error:', err);
       setError(`Failed to read file: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setIsLoading(false);
     }

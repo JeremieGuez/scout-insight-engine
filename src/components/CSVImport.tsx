@@ -12,9 +12,11 @@ export function CSVImport() {
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    console.log('📁 File selected:', file?.name, file?.size);
     if (!file) return;
 
     if (!file.name.toLowerCase().endsWith('.csv')) {
+      console.error('❌ Invalid file type:', file.name);
       toast({
         title: "Invalid file type",
         description: "Please select a CSV file",
@@ -24,12 +26,15 @@ export function CSVImport() {
     }
 
     try {
+      console.log('🚀 Starting CSV load...');
       await loadFromCSV(file);
+      console.log('✅ CSV load completed, total players:', totalPlayers);
       toast({
         title: "CSV imported successfully",
         description: `Loaded ${totalPlayers} players from your CSV file`,
       });
     } catch (err) {
+      console.error('❌ CSV import failed:', err);
       toast({
         title: "Import failed",
         description: "Failed to import CSV file. Please check the format.",
