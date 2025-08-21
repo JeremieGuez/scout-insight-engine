@@ -86,51 +86,61 @@ function estimateMarketValue(age: number, goals: number, assists: number, minute
 }
 
 function csvRowToPlayer(row: FBrefPlayerRow, index: number): Player {
-  const age = safeParseInt(row.Age, 25);
-  const goals = safeParseInt(row.Gls);
-  const assists = safeParseInt(row.Ast);
-  const minutes = safeParseInt(row.Min);
-  const position = normalizePosition(row.Pos);
   const { league, country } = normalizeLeague(row.Comp);
-  const nineties = safeParseFloat(row["90s"], 1);
-  
-  // Estimate missing stats based on available data
-  const tackles = Math.max(0, Math.round((safeParseInt(row.CrdY) * 8 + Math.random() * 20)));
-  const interceptions = Math.max(0, Math.round(tackles * 0.6 + Math.random() * 15));
-  const passAccuracy = Math.max(65, Math.min(95, 75 + (safeParseFloat(row.PrgP) / nineties / 10) + Math.random() * 10));
-  const forwardPasses = Math.max(0, Math.round(safeParseFloat(row.PrgP) + Math.random() * 50));
-  
-  // Style metrics based on position and stats
-  const tempo = Math.max(1, Math.min(10, Math.round(5 + (forwardPasses / nineties / 20) + Math.random() * 3)));
-  const pressingIntensity = Math.max(1, Math.min(10, Math.round(5 + (tackles / nineties / 3) + Math.random() * 3)));
-  const aggressivenessIndex = Math.max(1, Math.min(10, Math.round(3 + (safeParseInt(row.CrdY) / nineties * 2) + Math.random() * 4)));
   
   return {
     id: `csv-player-${index}`,
     name: row.Player.trim(),
-    age,
+    age: row.Age ? safeParseInt(row.Age) : undefined,
     club: row.Squad.trim(),
-    position,
+    position: normalizePosition(row.Pos),
     league,
     country,
-    goals,
-    assists,
-    tackles,
-    interceptions,
-    passAccuracy: Math.round(passAccuracy * 10) / 10,
-    forwardPasses,
-    kmCovered: Math.round((8 + Math.random() * 4) * 10) / 10,
-    tempo,
-    pressingIntensity,
-    aggressivenessIndex,
-    pressMentions: Math.round(Math.random() * 50),
-    sentimentScore: Math.round(-30 + Math.random() * 110),
-    socialMediaActivity: Math.round(1 + Math.random() * 9),
-    followersCount: Math.round(1000 + Math.random() * 4999000),
-    marketValue: Math.round(estimateMarketValue(age, goals, assists, minutes, position) * 10) / 10,
-    contractExpiry: `${2024 + Math.floor(Math.random() * 4)}-06-30`,
-    height: Math.round(165 + Math.random() * 35),
-    preferredFoot: Math.random() > 0.7 ? 'Left' : Math.random() > 0.9 ? 'Both' : 'Right'
+    
+    // Basic CSV stats - only use what's present
+    goals: row.Gls ? safeParseInt(row.Gls) : undefined,
+    assists: row.Ast ? safeParseInt(row.Ast) : undefined,
+    minutes: row.Min ? safeParseInt(row.Min) : undefined,
+    nineties: row["90s"] ? safeParseFloat(row["90s"]) : undefined,
+    
+    // Expected stats
+    xG: row.xG ? safeParseFloat(row.xG) : undefined,
+    npxG: row.npxG ? safeParseFloat(row.npxG) : undefined,
+    xAG: row.xAG ? safeParseFloat(row.xAG) : undefined,
+    npxGPlusxAG: row["npxG+xAG"] ? safeParseFloat(row["npxG+xAG"]) : undefined,
+    
+    // Progressive stats
+    prgC: row.PrgC ? safeParseInt(row.PrgC) : undefined,
+    prgP: row.PrgP ? safeParseInt(row.PrgP) : undefined,
+    prgR: row.PrgR ? safeParseInt(row.PrgR) : undefined,
+    
+    // Shooting stats
+    shots: row.Sh ? safeParseInt(row.Sh) : undefined,
+    shotsOnTarget: row.SoT ? safeParseInt(row.SoT) : undefined,
+    shotAccuracy: row["SoT%"] ? safeParseFloat(row["SoT%"]) : undefined,
+    shotsOn90: row["Sh/90"] ? safeParseFloat(row["Sh/90"]) : undefined,
+    
+    // Passing stats
+    passAttempts: row.Att ? safeParseInt(row.Att) : undefined,
+    passCompleted: row.Cmp ? safeParseInt(row.Cmp) : undefined,
+    passAccuracy: row["Cmp%"] ? safeParseFloat(row["Cmp%"]) : undefined,
+    totalPassDistance: row.TotDist ? safeParseInt(row.TotDist) : undefined,
+    progressivePassDistance: row.PrgDist ? safeParseInt(row.PrgDist) : undefined,
+    
+    // Defensive stats
+    tackles: row.Tkl ? safeParseInt(row.Tkl) : undefined,
+    tacklesWon: row.TklW ? safeParseInt(row.TklW) : undefined,
+    interceptions: row.Int ? safeParseInt(row.Int) : undefined,
+    blocks: row.Blocks_stats_defense ? safeParseInt(row.Blocks_stats_defense) : undefined,
+    clearances: row.Clr ? safeParseInt(row.Clr) : undefined,
+    
+    // Goalkeeper stats
+    saves: row.Saves ? safeParseInt(row.Saves) : undefined,
+    savePercentage: row["Save%"] ? safeParseFloat(row["Save%"]) : undefined,
+    cleanSheets: row.CS ? safeParseInt(row.CS) : undefined,
+    goalsAgainst: row.GA ? safeParseInt(row.GA) : undefined,
+    
+    // NO MORE ESTIMATED/RANDOM DATA - everything else stays undefined
   };
 }
 
