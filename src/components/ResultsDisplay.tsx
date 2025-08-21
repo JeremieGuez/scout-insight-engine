@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlayerCard } from './PlayerCard';
+import { 
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { CompactPlayerCard } from './CompactPlayerCard';
+import { SelectedPlayerCard } from './SelectedPlayerCard';
 import { SearchInterface } from './SearchInterface';
+import { QuickFilters } from './QuickFilters';
 import { ResultsFilters } from './ResultsFilters';
 import { Player, findSimilarPlayers, rankSimilarPlayers } from '@/data/players';
 import { usePlayerData } from '@/hooks/usePlayerData';
@@ -20,11 +30,21 @@ export const ResultsDisplay = ({ selectedPlayer, onPlayerSelect }: ResultsDispla
     [selectedPlayer, players]
   );
   const [filteredPlayers, setFilteredPlayers] = useState<(Player & { similarity: number })[]>(similarPlayers);
+  const [showExpandedFilters, setShowExpandedFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Update filtered players when similar players change
   useEffect(() => {
     setFilteredPlayers(similarPlayers);
+    setCurrentPage(1);
   }, [similarPlayers]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPlayers = filteredPlayers.slice(startIndex, endIndex);
 
   const exportToCsv = () => {
     const headers = [
@@ -78,6 +98,9 @@ export const ResultsDisplay = ({ selectedPlayer, onPlayerSelect }: ResultsDispla
       <div className="mb-6">
         <SearchInterface onPlayerSelect={onPlayerSelect} selectedPlayer={selectedPlayer} />
       </div>
+
+      {/* Selected Player Card */}
+      <SelectedPlayerCard player={selectedPlayer} />
       
       {/* Results Header */}
       <div className="flex items-center justify-between">
@@ -87,10 +110,10 @@ export const ResultsDisplay = ({ selectedPlayer, onPlayerSelect }: ResultsDispla
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              Similar to {selectedPlayer.name}
+              Joueurs similaires
             </h1>
             <p className="text-sm text-muted-foreground">
-              {selectedPlayer.position} • {selectedPlayer.club} • {selectedPlayer.league}
+              {filteredPlayers.length} joueurs trouvés • Page {currentPage} sur {totalPages}
             </p>
           </div>
         </div>
@@ -106,50 +129,115 @@ export const ResultsDisplay = ({ selectedPlayer, onPlayerSelect }: ResultsDispla
         </Button>
       </div>
 
-      {/* Filters */}
-      <ResultsFilters 
+      {/* Quick Filters */}
+      <QuickFilters 
         players={similarPlayers} 
-        onFilterChange={setFilteredPlayers}
+        onFilterChange={(filtered) => {
+          setFilteredPlayers(filtered);
+          setCurrentPage(1);
+        }}
+        onExpandFilters={() => setShowExpandedFilters(!showExpandedFilters)}
       />
+
+      {/* Expanded Filters */}
+      {showExpandedFilters && (
+        <ResultsFilters 
+          players={similarPlayers} 
+          onFilterChange={(filtered) => {
+            setFilteredPlayers(filtered);
+            setCurrentPage(1);
+          }}
+        />
+      )}
 
       {/* Results Summary */}
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-1">
           <Users className="h-4 w-4" />
-          <span>{filteredPlayers.length} of {similarPlayers.length} players</span>
+          <span>{filteredPlayers.length} de {similarPlayers.length} joueurs</span>
         </div>
         {filteredPlayers.length > 0 && (
           <>
             <span>•</span>
-            <span>Best match: {(filteredPlayers[0].similarity * 100).toFixed(0)}%</span>
+            <span>Meilleur match: {(filteredPlayers[0].similarity * 100).toFixed(0)}%</span>
             <span>•</span>
-            <span>{new Set(filteredPlayers.map(p => p.league)).size} leagues</span>
+            <span>{new Set(filteredPlayers.map(p => p.league)).size} ligues</span>
           </>
         )}
       </div>
 
       {/* Similar Players Grid */}
       <div className="space-y-4">
-        {filteredPlayers.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredPlayers.map((player, index) => (
-              <div key={player.id} className="relative">
-                <div className="absolute -top-2 -left-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold z-10">
-                  {index + 1}
-                </div>
-                <div className="absolute -top-1 -right-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1 rounded-full text-xs font-semibold z-10">
-                  {(player.similarity * 100).toFixed(0)}% match
-                </div>
-                <PlayerCard player={player} showSimilarity={true} />
+        {currentPlayers.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {currentPlayers.map((player, index) => (
+                <CompactPlayerCard 
+                  key={player.id} 
+                  player={player} 
+                  rank={startIndex + index + 1}
+                />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center mt-6">
+                <Pagination>
+                  <PaginationContent>
+                    {currentPage > 1 && (
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setCurrentPage(currentPage - 1)}
+                          className="cursor-pointer"
+                        />
+                      </PaginationItem>
+                    )}
+                    
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink 
+                            onClick={() => setCurrentPage(pageNum)}
+                            isActive={currentPage === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    
+                    {currentPage < totalPages && (
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setCurrentPage(currentPage + 1)}
+                          className="cursor-pointer"
+                        />
+                      </PaginationItem>
+                    )}
+                  </PaginationContent>
+                </Pagination>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         ) : (
           <Card className="p-8 text-center">
             <div className="text-muted-foreground">
               <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">No players match your filters</p>
-              <p className="text-sm">Try adjusting your filter criteria.</p>
+              <p className="text-lg font-medium">Aucun joueur ne correspond aux filtres</p>
+              <p className="text-sm">Essayez d'ajuster vos critères de filtrage.</p>
             </div>
           </Card>
         )}
