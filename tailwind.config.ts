@@ -52,6 +52,15 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// Scout360 custom colors
+				'pitch-green': {
+					DEFAULT: 'hsl(var(--pitch-green))',
+					light: 'hsl(var(--pitch-green-light))',
+					dark: 'hsl(var(--pitch-green-dark))'
+				},
+				success: 'hsl(var(--success))',
+				warning: 'hsl(var(--warning))',
+				info: 'hsl(var(--info))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
