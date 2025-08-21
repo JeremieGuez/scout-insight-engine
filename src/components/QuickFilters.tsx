@@ -92,49 +92,66 @@ export const QuickFilters = ({ players, onFilterChange, onExpandFilters }: Quick
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Similarity Threshold */}
+          {/* Similarity Cards */}
           <div>
-            <label className="text-xs font-medium mb-2 block text-muted-foreground">
-              Similarité min: {filters.minSimilarity}%
-            </label>
-            <Slider
-              value={[filters.minSimilarity]}
-              onValueChange={(value) => setFilters(prev => ({ ...prev, minSimilarity: value[0] }))}
-              max={100}
-              min={0}
-              step={5}
-              className="w-full"
-            />
+            <label className="text-xs font-medium mb-2 block text-muted-foreground">Similarité minimum</label>
+            <div className="grid grid-cols-3 gap-1">
+              {[0, 50, 80].map((value) => (
+                <Button
+                  key={value}
+                  variant={filters.minSimilarity === value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilters(prev => ({ ...prev, minSimilarity: value }))}
+                  className="text-xs"
+                >
+                  {value === 0 ? 'Tous' : `${value}%+`}
+                </Button>
+              ))}
+            </div>
           </div>
 
-          {/* Age Range */}
+          {/* Age Cards */}
           <div>
-            <label className="text-xs font-medium mb-2 block text-muted-foreground">
-              Âge: {filters.ageRange[0]} - {filters.ageRange[1]} ans
-            </label>
-            <Slider
-              value={filters.ageRange}
-              onValueChange={(value) => setFilters(prev => ({ ...prev, ageRange: value }))}
-              max={40}
-              min={18}
-              step={1}
-              className="w-full"
-            />
+            <label className="text-xs font-medium mb-2 block text-muted-foreground">Âge</label>
+            <div className="grid grid-cols-3 gap-1">
+              {[
+                { label: 'Tous', range: [18, 40] },
+                { label: '18-25', range: [18, 25] },
+                { label: '26-35', range: [26, 35] }
+              ].map((option) => (
+                <Button
+                  key={option.label}
+                  variant={filters.ageRange[0] === option.range[0] && filters.ageRange[1] === option.range[1] ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilters(prev => ({ ...prev, ageRange: option.range }))}
+                  className="text-xs"
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
           </div>
 
-          {/* Market Value Range */}
+          {/* Market Value Cards */}
           <div>
-            <label className="text-xs font-medium mb-2 block text-muted-foreground">
-              Valeur: €{filters.marketValueRange[0]}M - €{filters.marketValueRange[1]}M
-            </label>
-            <Slider
-              value={filters.marketValueRange}
-              onValueChange={(value) => setFilters(prev => ({ ...prev, marketValueRange: value }))}
-              max={150}
-              min={0}
-              step={5}
-              className="w-full"
-            />
+            <label className="text-xs font-medium mb-2 block text-muted-foreground">Valeur marchande</label>
+            <div className="grid grid-cols-3 gap-1">
+              {[
+                { label: 'Toutes', range: [0, 150] },
+                { label: '0-20M', range: [0, 20] },
+                { label: '20M+', range: [20, 150] }
+              ].map((option) => (
+                <Button
+                  key={option.label}
+                  variant={filters.marketValueRange[0] === option.range[0] && filters.marketValueRange[1] === option.range[1] ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilters(prev => ({ ...prev, marketValueRange: option.range }))}
+                  className="text-xs"
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
           </div>
 
           {/* League */}
