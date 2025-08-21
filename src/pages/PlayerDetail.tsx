@@ -88,22 +88,22 @@ const PlayerDetail = () => {
         <div className="max-w-5xl mx-auto space-y-6">
           
           {/* Player Profile Header */}
-          <Card className="overflow-hidden border-0 shadow-lg">
-            <div className="relative bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6">
+          <Card className="overflow-hidden border-0 shadow-xl bg-white">
+            <div className="relative bg-gradient-to-br from-slate-50 via-white to-slate-100 p-6">
               <div className="flex items-start gap-6">
                 {/* Player Avatar */}
                 <div className="relative">
-                  <Avatar className="h-24 w-24 border-4 border-white/20 shadow-xl">
-                    <AvatarImage 
+                  <Avatar className="h-24 w-24 border-4 border-primary/20 shadow-lg">
+                    <AvatarImage
                       src={`https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=0ea5e9&color=fff&size=256&bold=true`} 
                       alt={player.name} 
                     />
-                    <AvatarFallback className="text-2xl font-bold bg-white/20 text-white">
+                    <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
                       {player.name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute -bottom-2 -right-2">
-                    <Badge className={`${getPositionColor(player.position)} text-xs font-bold shadow-lg`}>
+                    <Badge className={`${getPositionColor(player.position)} text-xs font-bold shadow-md border-2 border-white`}>
                       {player.position}
                     </Badge>
                   </div>
@@ -113,8 +113,8 @@ const PlayerDetail = () => {
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h1 className="text-3xl font-bold text-white mb-2">{player.name}</h1>
-                      <div className="flex items-center gap-4 text-white/90">
+                      <h1 className="text-3xl font-bold text-foreground mb-2">{player.name}</h1>
+                      <div className="flex items-center gap-4 text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <User className="h-4 w-4" />
                           <span>{player.age} ans</span>
@@ -130,23 +130,23 @@ const PlayerDetail = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-white">€{player.marketValue}M</div>
-                      <div className="text-sm text-white/80">Valeur marchande</div>
+                      <div className="text-2xl font-bold text-foreground">€{player.marketValue}M</div>
+                      <div className="text-sm text-muted-foreground">Valeur marchande</div>
                     </div>
                   </div>
 
                   {/* Club Info */}
-                  <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                    <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
-                      <Shield className="h-4 w-4 text-white" />
+                  <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg p-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Shield className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <div className="font-semibold text-white">{player.club}</div>
-                      <div className="text-sm text-white/80">{player.league} • {player.country}</div>
+                      <div className="font-semibold text-foreground">{player.club}</div>
+                      <div className="text-sm text-muted-foreground">{player.league} • {player.country}</div>
                     </div>
                     <div className="ml-auto text-right">
-                      <div className="text-sm text-white/80">Contrat jusqu'en</div>
-                      <div className="font-semibold text-white">{player.contractExpiry.split('-')[0]}</div>
+                      <div className="text-sm text-muted-foreground">Contrat jusqu'en</div>
+                      <div className="font-semibold text-foreground">{player.contractExpiry.split('-')[0]}</div>
                     </div>
                   </div>
                 </div>
