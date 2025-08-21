@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PlayerCard } from '@/components/PlayerCard';
 import { findSimilarPlayers } from '@/data/players';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   ArrowLeft, 
   Target, 
@@ -17,7 +18,11 @@ import {
   Calendar,
   MapPin,
   User,
-  BarChart3
+  BarChart3,
+  Star,
+  Heart,
+  Shield,
+  Activity
 } from 'lucide-react';
 
 const PlayerDetail = () => {
@@ -59,202 +64,230 @@ const PlayerDetail = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
       {/* Header */}
-      <header className="bg-white border-b border-primary/10 sticky top-0 z-40 backdrop-blur-sm bg-white/95">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-white/80 backdrop-blur-md border-b border-primary/10 sticky top-0 z-40">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 hover:bg-primary/10"
             >
               <ArrowLeft className="h-4 w-4" />
               Retour
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
-                <Target className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-primary">Scout360</h1>
-                <p className="text-xs text-muted-foreground">Fiche Joueur</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-primary">Scout360</span>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto space-y-8">
+      <main className="container mx-auto px-4 py-6">
+        <div className="max-w-5xl mx-auto space-y-6">
           
-          {/* Player Header */}
-          <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-3xl mb-2">{player.name}</CardTitle>
-                  <div className="flex items-center gap-4 text-primary-foreground/80">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      <span>{player.age} ans</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{player.club}</span>
-                    </div>
-                    <Badge className={`${getPositionColor(player.position)} text-xs`}>
+          {/* Player Profile Header */}
+          <Card className="overflow-hidden border-0 shadow-lg">
+            <div className="relative bg-gradient-to-r from-primary via-primary/90 to-primary/80 p-6">
+              <div className="flex items-start gap-6">
+                {/* Player Avatar */}
+                <div className="relative">
+                  <Avatar className="h-24 w-24 border-4 border-white/20 shadow-xl">
+                    <AvatarImage 
+                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=0ea5e9&color=fff&size=256&bold=true`} 
+                      alt={player.name} 
+                    />
+                    <AvatarFallback className="text-2xl font-bold bg-white/20 text-white">
+                      {player.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-2 -right-2">
+                    <Badge className={`${getPositionColor(player.position)} text-xs font-bold shadow-lg`}>
                       {player.position}
                     </Badge>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold">€{player.marketValue}M</div>
-                  <div className="text-sm text-primary-foreground/80">Valeur marchande</div>
+
+                {/* Player Info */}
+                <div className="flex-1">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h1 className="text-3xl font-bold text-white mb-2">{player.name}</h1>
+                      <div className="flex items-center gap-4 text-white/90">
+                        <div className="flex items-center gap-1">
+                          <User className="h-4 w-4" />
+                          <span>{player.age} ans</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Shield className="h-4 w-4" />
+                          <span>{player.height}cm</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Activity className="h-4 w-4" />
+                          <span>{player.preferredFoot}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-white">€{player.marketValue}M</div>
+                      <div className="text-sm text-white/80">Valeur marchande</div>
+                    </div>
+                  </div>
+
+                  {/* Club Info */}
+                  <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                    <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
+                      <Shield className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white">{player.club}</div>
+                      <div className="text-sm text-white/80">{player.league} • {player.country}</div>
+                    </div>
+                    <div className="ml-auto text-right">
+                      <div className="text-sm text-white/80">Contrat jusqu'en</div>
+                      <div className="font-semibold text-white">{player.contractExpiry.split('-')[0]}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-lg font-semibold">{player.league}</div>
-                  <div className="text-sm text-primary-foreground/80">Championnat</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold">{player.height}cm</div>
-                  <div className="text-sm text-primary-foreground/80">Taille</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold">{player.preferredFoot}</div>
-                  <div className="text-sm text-primary-foreground/80">Pied fort</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-semibold">{player.contractExpiry.split('-')[0]}</div>
-                  <div className="text-sm text-primary-foreground/80">Fin contrat</div>
-                </div>
-              </div>
-            </CardContent>
+            </div>
           </Card>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             
-            {/* Performance Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                  Performances
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Trophy className="h-4 w-4 text-yellow-600" />
-                    <span>Buts</span>
+            {/* Performance */}
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                    <Trophy className="h-5 w-5 text-white" />
                   </div>
-                  <span className="font-semibold text-primary">{player.goals}</span>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Performance</h3>
+                    <p className="text-xs text-muted-foreground">Saison en cours</p>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-4 w-4 text-blue-600" />
-                    <span>Passes décisives</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Buts</span>
+                    <span className="font-bold text-lg text-primary">{player.goals}</span>
                   </div>
-                  <span className="font-semibold text-primary">{player.assists}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-green-600" />
-                    <span>Précision passes</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Passes D.</span>
+                    <span className="font-bold text-lg text-primary">{player.assists}</span>
                   </div>
-                  <span className="font-semibold text-primary">{player.passAccuracy}%</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Précision</span>
+                    <span className="font-bold text-primary">{player.passAccuracy}%</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Style de jeu */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  Style de jeu
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span>Tempo</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 h-2 bg-muted rounded-full">
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                    <Zap className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Style de jeu</h3>
+                    <p className="text-xs text-muted-foreground">Caractéristiques</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Tempo</span>
+                      <span className="font-semibold">{player.tempo}/10</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-muted rounded-full">
                       <div 
-                        className="h-2 bg-orange-500 rounded-full" 
+                        className="h-1.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all" 
                         style={{ width: `${(player.tempo / 10) * 100}%` }}
                       />
                     </div>
-                    <span className="font-semibold text-primary">{player.tempo}/10</span>
                   </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Pressing</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 h-2 bg-muted rounded-full">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span>Pressing</span>
+                      <span className="font-semibold">{player.pressingIntensity}/10</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-muted rounded-full">
                       <div 
-                        className="h-2 bg-red-500 rounded-full" 
+                        className="h-1.5 bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all" 
                         style={{ width: `${(player.pressingIntensity / 10) * 100}%` }}
                       />
                     </div>
-                    <span className="font-semibold text-primary">{player.pressingIntensity}/10</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Agressivité</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 h-2 bg-muted rounded-full">
-                      <div 
-                        className="h-2 bg-purple-500 rounded-full" 
-                        style={{ width: `${(player.aggressivenessIndex / 10) * 100}%` }}
-                      />
-                    </div>
-                    <span className="font-semibold text-primary">{player.aggressivenessIndex}/10</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Profil médiatique */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  Profil médiatique
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                    <span>Mentions presse</span>
+            {/* Défense */}
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-white" />
                   </div>
-                  <span className="font-semibold text-primary">{player.pressMentions}</span>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Défense</h3>
+                    <p className="text-xs text-muted-foreground">Actions défensives</p>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className={`h-4 w-4 ${getSentimentColor(player.sentimentScore)}`} />
-                    <span>Sentiment</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Tacles</span>
+                    <span className="font-bold text-lg text-primary">{player.tackles}</span>
                   </div>
-                  <span className={`font-semibold ${getSentimentColor(player.sentimentScore)}`}>
-                    {player.sentimentScore > 0 ? '+' : ''}{player.sentimentScore}
-                  </span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Interceptions</span>
+                    <span className="font-bold text-lg text-primary">{player.interceptions}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Km parcourus</span>
+                    <span className="font-bold text-primary">{player.kmCovered}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>Followers</span>
+              </CardContent>
+            </Card>
+
+            {/* Médiatique */}
+            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center">
+                    <Heart className="h-5 w-5 text-white" />
                   </div>
-                  <span className="font-semibold text-primary">
-                    {player.followersCount > 1000000 
-                      ? `${(player.followersCount / 1000000).toFixed(1)}M`
-                      : `${Math.floor(player.followersCount / 1000)}K`
-                    }
-                  </span>
+                  <div>
+                    <h3 className="font-semibold text-foreground">Médiatique</h3>
+                    <p className="text-xs text-muted-foreground">Popularité</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Mentions</span>
+                    <span className="font-bold text-lg text-primary">{player.pressMentions}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Sentiment</span>
+                    <span className={`font-bold ${getSentimentColor(player.sentimentScore)}`}>
+                      {player.sentimentScore > 0 ? '+' : ''}{player.sentimentScore}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Followers</span>
+                    <span className="font-bold text-primary">
+                      {player.followersCount > 1000000 
+                        ? `${(player.followersCount / 1000000).toFixed(1)}M`
+                        : `${Math.floor(player.followersCount / 1000)}K`
+                      }
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -262,22 +295,33 @@ const PlayerDetail = () => {
 
           {/* Similar Players */}
           {similarPlayers.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                <Target className="h-6 w-6 text-primary" />
-                Joueurs similaires
-              </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {similarPlayers.map((similarPlayer, index) => (
-                  <div key={similarPlayer.id} className="relative">
-                    <div className="absolute -top-2 -left-2 bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold z-10">
-                      {index + 1}
-                    </div>
-                    <PlayerCard player={similarPlayer} showSimilarity={true} />
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <div className="h-8 w-8 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
+                    <Target className="h-4 w-4 text-white" />
                   </div>
-                ))}
-              </div>
-            </div>
+                  Joueurs similaires
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  {similarPlayers.map((similarPlayer, index) => (
+                    <div key={similarPlayer.id} className="relative group">
+                      <div className="absolute -top-2 -left-2 bg-gradient-to-r from-primary to-primary/80 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold z-10 shadow-lg">
+                        {index + 1}
+                      </div>
+                      <div className="absolute -top-1 -right-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-2 py-1 rounded-full text-xs font-semibold z-10 shadow-lg">
+                        {(similarPlayer.similarity * 100).toFixed(0)}%
+                      </div>
+                      <div className="transform transition-transform group-hover:scale-105">
+                        <PlayerCard player={similarPlayer} showSimilarity={false} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </main>
