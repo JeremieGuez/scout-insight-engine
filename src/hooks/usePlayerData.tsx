@@ -3,12 +3,21 @@ import Papa from 'papaparse';
 import { Player } from '@/data/players';
 import { FBrefPlayerRow } from '@/types/csv';
 
+interface ImportStats {
+  totalRows: number;
+  processedPlayers: number;
+  skippedRows: number;
+  uniquePlayers: number;
+  leagues: string[];
+}
+
 interface PlayerDataContextType {
   players: Player[];
   isLoading: boolean;
   error: string | null;
   loadFromCSV: (file: File) => Promise<void>;
   totalPlayers: number;
+  lastImportStats: ImportStats | null;
 }
 
 const PlayerDataContext = createContext<PlayerDataContextType | undefined>(undefined);
@@ -129,6 +138,7 @@ export function PlayerDataProvider({ children }: { children: ReactNode }) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastImportStats, setLastImportStats] = useState<ImportStats | null>(null);
 
   const loadFromCSV = async (file: File) => {
     setIsLoading(true);
@@ -183,14 +193,23 @@ export function PlayerDataProvider({ children }: { children: ReactNode }) {
           });
 
           const uniquePlayers = Array.from(playerMap.values());
-          console.log('🎯 Final result:', {
-            totalRowsInCSV: results.data.length,
+          
+          // Calculate league distribution
+          const leagueSet = new Set(uniquePlayers.map(p => p.league));
+          const leagues = Array.from(leagueSet).sort();
+          
+          const stats: ImportStats = {
+            totalRows: results.data.length,
             processedPlayers: processedCount,
             skippedRows: skippedCount,
-            uniquePlayersCreated: uniquePlayers.length
-          });
+            uniquePlayers: uniquePlayers.length,
+            leagues
+          };
+          
+          console.log('🎯 Final result:', stats);
           
           setPlayers(uniquePlayers);
+          setLastImportStats(stats);
           setIsLoading(false);
         },
         error: (error) => {
@@ -213,7 +232,8 @@ export function PlayerDataProvider({ children }: { children: ReactNode }) {
         isLoading, 
         error, 
         loadFromCSV, 
-        totalPlayers: players.length 
+        totalPlayers: players.length,
+        lastImportStats
       }}
     >
       {children}
