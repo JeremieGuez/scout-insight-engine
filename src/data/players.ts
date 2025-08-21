@@ -200,123 +200,110 @@ export function calculateSimilarity(player1: Player, player2: Player): number {
   let totalSimilarity = 0;
   let totalWeight = 0;
   
-  // Age similarity (5% weight)
-  if (player1.age != null && player2.age != null) {
-    const ageDiff = Math.abs(player1.age - player2.age);
-    const ageSimilarity = Math.max(0, (8 - ageDiff) / 8);
-    totalSimilarity += ageSimilarity * 0.05;
-    totalWeight += 0.05;
-  }
+  // Helper function to calculate normalized similarity between two values
+  const calcSimilarity = (val1: number | undefined, val2: number | undefined, maxDiff: number): number | null => {
+    if (val1 == null || val2 == null) return null;
+    const diff = Math.abs(val1 - val2);
+    return Math.max(0, 1 - diff / maxDiff);
+  };
   
-  // Minutes played similarity (5% weight) - helps compare players with similar game time
-  if (player1.minutes != null && player2.minutes != null) {
-    const minDiff = Math.abs(player1.minutes - player2.minutes);
-    const minSimilarity = Math.max(0, 1 - minDiff / 3000); // Max diff ~3000 minutes
-    totalSimilarity += minSimilarity * 0.05;
-    totalWeight += 0.05;
-  }
+  // Helper function to add similarity with weight
+  const addSimilarity = (similarity: number | null, weight: number) => {
+    if (similarity !== null) {
+      totalSimilarity += similarity * weight;
+      totalWeight += weight;
+    }
+  };
   
-  // Position-specific similarity calculation
+  // 1. Age similarity (3% weight) - reduced because we have better metrics
+  addSimilarity(calcSimilarity(player1.age, player2.age, 8), 0.03);
+  
+  // 2. Playing time similarity (7% weight) - indicates similar usage
+  addSimilarity(calcSimilarity(player1.minutes, player2.minutes, 3000), 0.04);
+  addSimilarity(calcSimilarity(player1.nineties, player2.nineties, 30), 0.03);
+  
+  // Position-specific analysis
   const isGoalkeeper = player1.position === 'GK';
   const isDefender = ['CB', 'LB', 'RB', 'WB'].includes(player1.position);
   const isMidfielder = ['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(player1.position);
   const isAttacker = ['LW', 'RW', 'ST', 'CF'].includes(player1.position);
   
   if (isGoalkeeper) {
-    // For goalkeepers: saves, clean sheets, save percentage
-    if (player1.saves != null && player2.saves != null) {
-      const savesDiff = Math.abs(player1.saves - player2.saves);
-      const savesSimilarity = Math.max(0, 1 - savesDiff / 100);
-      totalSimilarity += savesSimilarity * 0.4;
-      totalWeight += 0.4;
-    }
+    // ============ GOALKEEPER ANALYSIS (90% weight) ============
     
-    if (player1.savePercentage != null && player2.savePercentage != null) {
-      const savePctDiff = Math.abs(player1.savePercentage - player2.savePercentage);
-      const savePctSimilarity = Math.max(0, 1 - savePctDiff / 30);
-      totalSimilarity += savePctSimilarity * 0.3;
-      totalWeight += 0.3;
-    }
+    // Shot stopping (40%)
+    addSimilarity(calcSimilarity(player1.saves, player2.saves, 100), 0.25);
+    addSimilarity(calcSimilarity(player1.savePercentage, player2.savePercentage, 30), 0.15);
+    
+    // Clean sheets and goals against (30%)
+    addSimilarity(calcSimilarity(player1.cleanSheets, player2.cleanSheets, 20), 0.15);
+    addSimilarity(calcSimilarity(player1.goalsAgainst, player2.goalsAgainst, 50), 0.15);
+    
+    // Distribution (20%)
+    addSimilarity(calcSimilarity(player1.passAccuracy, player2.passAccuracy, 25), 0.10);
+    addSimilarity(calcSimilarity(player1.passCompleted, player2.passCompleted, 200), 0.10);
+    
   } else {
-    // For outfield players: goals and assists (25% weight)
-    if (player1.goals != null && player2.goals != null && player1.assists != null && player2.assists != null) {
-      const goalsDiff = Math.abs(player1.goals - player2.goals);
-      const assistsDiff = Math.abs(player1.assists - player2.assists);
-      const attackingSimilarity = Math.max(0, 1 - (goalsDiff + assistsDiff) / 30);
-      totalSimilarity += attackingSimilarity * 0.25;
-      totalWeight += 0.25;
+    // ============ OUTFIELD PLAYER ANALYSIS ============
+    
+    // 3. Basic offensive output (15% weight)
+    addSimilarity(calcSimilarity(player1.goals, player2.goals, 25), 0.08);
+    addSimilarity(calcSimilarity(player1.assists, player2.assists, 15), 0.07);
+    
+    // 4. Expected performance (15% weight) - more predictive than raw stats
+    addSimilarity(calcSimilarity(player1.xG, player2.xG, 20), 0.08);
+    addSimilarity(calcSimilarity(player1.xAG, player2.xAG, 15), 0.07);
+    
+    // 5. Progressive actions (15% weight) - key for modern football
+    addSimilarity(calcSimilarity(player1.prgC, player2.prgC, 80), 0.05);
+    addSimilarity(calcSimilarity(player1.prgP, player2.prgP, 100), 0.05);
+    addSimilarity(calcSimilarity(player1.prgR, player2.prgR, 60), 0.05);
+    
+    if (isAttacker) {
+      // ============ ATTACKER SPECIFIC (45% weight) ============
+      
+      // Shooting style (25%)
+      addSimilarity(calcSimilarity(player1.shots, player2.shots, 150), 0.08);
+      addSimilarity(calcSimilarity(player1.shotsOnTarget, player2.shotsOnTarget, 60), 0.07);
+      addSimilarity(calcSimilarity(player1.shotAccuracy, player2.shotAccuracy, 40), 0.05);
+      addSimilarity(calcSimilarity(player1.shotsOn90, player2.shotsOn90, 4), 0.05);
+      
+      // Chance creation (20%)
+      addSimilarity(calcSimilarity(player1.prgC, player2.prgC, 60), 0.10);
+      addSimilarity(calcSimilarity(player1.prgR, player2.prgR, 40), 0.10);
+      
+    } else if (isMidfielder) {
+      // ============ MIDFIELDER SPECIFIC (45% weight) ============
+      
+      // Passing style (30%)
+      addSimilarity(calcSimilarity(player1.passAccuracy, player2.passAccuracy, 25), 0.10);
+      addSimilarity(calcSimilarity(player1.passCompleted, player2.passCompleted, 500), 0.08);
+      addSimilarity(calcSimilarity(player1.totalPassDistance, player2.totalPassDistance, 3000), 0.07);
+      addSimilarity(calcSimilarity(player1.progressivePassDistance, player2.progressivePassDistance, 1000), 0.05);
+      
+      // Tempo and creativity (15%)
+      addSimilarity(calcSimilarity(player1.prgP, player2.prgP, 80), 0.10);
+      addSimilarity(calcSimilarity(player1.prgC, player2.prgC, 40), 0.05);
+      
+    } else if (isDefender) {
+      // ============ DEFENDER SPECIFIC (45% weight) ============
+      
+      // Defensive actions (30%)
+      addSimilarity(calcSimilarity(player1.tackles, player2.tackles, 80), 0.10);
+      addSimilarity(calcSimilarity(player1.tacklesWon, player2.tacklesWon, 60), 0.08);
+      addSimilarity(calcSimilarity(player1.interceptions, player2.interceptions, 60), 0.07);
+      addSimilarity(calcSimilarity(player1.clearances, player2.clearances, 100), 0.05);
+      
+      // Ball playing ability (15%) - modern defenders
+      addSimilarity(calcSimilarity(player1.passAccuracy, player2.passAccuracy, 20), 0.08);
+      addSimilarity(calcSimilarity(player1.prgP, player2.prgP, 50), 0.07);
     }
     
-    // Expected stats similarity (20% weight)
-    if (player1.xG != null && player2.xG != null) {
-      const xGDiff = Math.abs(player1.xG - player2.xG);
-      const xGSimilarity = Math.max(0, 1 - xGDiff / 20);
-      totalSimilarity += xGSimilarity * 0.1;
-      totalWeight += 0.1;
-    }
+    // ============ UNIVERSAL OUTFIELD METRICS (10% weight) ============
     
-    if (player1.xAG != null && player2.xAG != null) {
-      const xAGDiff = Math.abs(player1.xAG - player2.xAG);
-      const xAGSimilarity = Math.max(0, 1 - xAGDiff / 15);
-      totalSimilarity += xAGSimilarity * 0.1;
-      totalWeight += 0.1;
-    }
-  }
-  
-  // Position-specific advanced stats
-  if (isDefender) {
-    // Defensive stats (30% weight for defenders)
-    if (player1.tackles != null && player2.tackles != null) {
-      const tackleDiff = Math.abs(player1.tackles - player2.tackles);
-      const tackleSimilarity = Math.max(0, 1 - tackleDiff / 60);
-      totalSimilarity += tackleSimilarity * 0.15;
-      totalWeight += 0.15;
-    }
-    
-    if (player1.interceptions != null && player2.interceptions != null) {
-      const intDiff = Math.abs(player1.interceptions - player2.interceptions);
-      const intSimilarity = Math.max(0, 1 - intDiff / 40);
-      totalSimilarity += intSimilarity * 0.15;
-      totalWeight += 0.15;
-    }
-  } else if (isMidfielder) {
-    // Passing stats (30% weight for midfielders)
-    if (player1.passAccuracy != null && player2.passAccuracy != null) {
-      const passDiff = Math.abs(player1.passAccuracy - player2.passAccuracy);
-      const passSimilarity = Math.max(0, 1 - passDiff / 25);
-      totalSimilarity += passSimilarity * 0.15;
-      totalWeight += 0.15;
-    }
-    
-    if (player1.prgP != null && player2.prgP != null) {
-      const prgPDiff = Math.abs(player1.prgP - player2.prgP);
-      const prgPSimilarity = Math.max(0, 1 - prgPDiff / 100);
-      totalSimilarity += prgPSimilarity * 0.15;
-      totalWeight += 0.15;
-    }
-  } else if (isAttacker) {
-    // Shooting stats (30% weight for attackers)
-    if (player1.shotsOn90 != null && player2.shotsOn90 != null) {
-      const shotsDiff = Math.abs(player1.shotsOn90 - player2.shotsOn90);
-      const shotsSimilarity = Math.max(0, 1 - shotsDiff / 3);
-      totalSimilarity += shotsSimilarity * 0.15;
-      totalWeight += 0.15;
-    }
-    
-    if (player1.shotAccuracy != null && player2.shotAccuracy != null) {
-      const shotAccDiff = Math.abs(player1.shotAccuracy - player2.shotAccuracy);
-      const shotAccSimilarity = Math.max(0, 1 - shotAccDiff / 40);
-      totalSimilarity += shotAccSimilarity * 0.15;
-      totalWeight += 0.15;
-    }
-  }
-  
-  // Progressive actions (10% weight for all outfield players)
-  if (!isGoalkeeper && player1.prgC != null && player2.prgC != null) {
-    const prgCDiff = Math.abs(player1.prgC - player2.prgC);
-    const prgCSimilarity = Math.max(0, 1 - prgCDiff / 50);
-    totalSimilarity += prgCSimilarity * 0.1;
-    totalWeight += 0.1;
+    // Involvement and consistency (5%)
+    addSimilarity(calcSimilarity(player1.passAttempts, player2.passAttempts, 800), 0.03);
+    addSimilarity(calcSimilarity(player1.blocks, player2.blocks, 30), 0.02);
   }
   
   // Return normalized similarity (0-1)
