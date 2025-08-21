@@ -112,6 +112,104 @@ export const CompactPlayerCard = ({ player, rank }: CompactPlayerCardProps) => {
             </div>
           )}
         </div>
+
+        {/* Position-specific stats - Line 1 */}
+        <div className="mt-2 grid grid-cols-2 gap-2 text-center">
+          {(['GK'].includes(player.position)) ? (
+            <>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.saves || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">Arrêts</div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.cleanSheets || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">Clean Sheets</div>
+              </div>
+            </>
+          ) : (['CB', 'LB', 'RB'].includes(player.position)) ? (
+            <>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.tackles || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">Tacles</div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.interceptions || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">Intercept.</div>
+              </div>
+            </>
+          ) : (['CDM', 'CM'].includes(player.position)) ? (
+            <>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.blocks || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">Blocs</div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.passCompleted || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">Passes</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.shotsOnTarget || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">Tirs cadrés</div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.xG?.toFixed(1) || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">xG</div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Position-specific stats - Line 2 */}
+        <div className="mt-2 grid grid-cols-2 gap-2 text-center">
+          {(['GK'].includes(player.position)) ? (
+            <>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.savePercentage?.toFixed(0) || 'N/A'}%</div>
+                <div className="text-xs text-muted-foreground">% Arrêts</div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.pressingIntensity}/10</div>
+                <div className="text-xs text-muted-foreground">Jeu pied</div>
+              </div>
+            </>
+          ) : (['CB', 'LB', 'RB'].includes(player.position)) ? (
+            <>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.clearances || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">Dégagements</div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.pressingIntensity}/10</div>
+                <div className="text-xs text-muted-foreground">Pressing</div>
+              </div>
+            </>
+          ) : (['CDM', 'CM'].includes(player.position)) ? (
+            <>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.prgP || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">Passes prog.</div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.prgC || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">Courses prog.</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.xAG?.toFixed(1) || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">xA</div>
+              </div>
+              <div>
+                <div className="text-xs font-medium text-foreground">{player.prgC || 'N/A'}</div>
+                <div className="text-xs text-muted-foreground">Courses prog.</div>
+              </div>
+            </>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
