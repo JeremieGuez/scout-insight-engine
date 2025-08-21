@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlayerCard } from './PlayerCard';
 import { SearchInterface } from './SearchInterface';
 import { ResultsFilters } from './ResultsFilters';
-import { Player, findSimilarPlayers } from '@/data/players';
+import { Player, findSimilarPlayers, rankSimilarPlayers } from '@/data/players';
 import { usePlayerData } from '@/hooks/usePlayerData';
 import { Download, Search, Users } from 'lucide-react';
 
@@ -15,7 +15,10 @@ interface ResultsDisplayProps {
 
 export const ResultsDisplay = ({ selectedPlayer, onPlayerSelect }: ResultsDisplayProps) => {
   const { players } = usePlayerData();
-  const similarPlayers = findSimilarPlayers(selectedPlayer, 10, players);
+  const similarPlayers = useMemo(() => 
+    rankSimilarPlayers(selectedPlayer, players), 
+    [selectedPlayer, players]
+  );
   const [filteredPlayers, setFilteredPlayers] = useState<(Player & { similarity: number })[]>(similarPlayers);
 
   // Update filtered players when similar players change

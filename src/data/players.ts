@@ -310,13 +310,16 @@ export function calculateSimilarity(player1: Player, player2: Player): number {
   return totalWeight > 0 ? Math.min(1, totalSimilarity / totalWeight) : 0;
 }
 
-export function findSimilarPlayers(targetPlayer: Player, count: number = 5, playerList: Player[] = players): Array<Player & { similarity: number }> {
+export function rankSimilarPlayers(targetPlayer: Player, playerList: Player[] = players): Array<Player & { similarity: number }> {
   return playerList
     .filter(player => player.id !== targetPlayer.id)
     .map(player => ({
       ...player,
       similarity: calculateSimilarity(targetPlayer, player)
     }))
-    .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, count);
+    .sort((a, b) => b.similarity - a.similarity);
+}
+
+export function findSimilarPlayers(targetPlayer: Player, count: number = 5, playerList: Player[] = players): Array<Player & { similarity: number }> {
+  return rankSimilarPlayers(targetPlayer, playerList).slice(0, count);
 }

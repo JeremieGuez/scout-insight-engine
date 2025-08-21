@@ -19,6 +19,7 @@ export const ResultsFilters = ({ players, onFilterChange }: ResultsFiltersProps)
     selectedLeagues: [] as string[],
     selectedPositions: [] as string[],
     minSimilarity: 0,
+    topN: 'all' as 'all' | number,
   });
 
   const [isExpanded, setIsExpanded] = useState(false);
@@ -27,7 +28,7 @@ export const ResultsFilters = ({ players, onFilterChange }: ResultsFiltersProps)
   const positions = [...new Set(players.map(p => p.position))].sort();
 
   const applyFilters = () => {
-    const filtered = players.filter(player => {
+    let filtered = players.filter(player => {
       const matchesAge = player.age >= filters.ageRange[0] && player.age <= filters.ageRange[1];
       const matchesValue = player.marketValue >= filters.marketValueRange[0] && player.marketValue <= filters.marketValueRange[1];
       const matchesLeague = filters.selectedLeagues.length === 0 || filters.selectedLeagues.includes(player.league);
@@ -36,6 +37,14 @@ export const ResultsFilters = ({ players, onFilterChange }: ResultsFiltersProps)
 
       return matchesAge && matchesValue && matchesLeague && matchesPosition && matchesSimilarity;
     });
+
+    // Re-sort by similarity to ensure correct order
+    filtered = filtered.sort((a, b) => b.similarity - a.similarity);
+
+    // Apply top N filter
+    if (filters.topN !== 'all') {
+      filtered = filtered.slice(0, filters.topN);
+    }
 
     onFilterChange(filtered);
   };
@@ -47,6 +56,7 @@ export const ResultsFilters = ({ players, onFilterChange }: ResultsFiltersProps)
       selectedLeagues: [],
       selectedPositions: [],
       minSimilarity: 0,
+      topN: 'all',
     });
     onFilterChange(players);
   };
@@ -75,7 +85,8 @@ export const ResultsFilters = ({ players, onFilterChange }: ResultsFiltersProps)
                           filters.ageRange[1] !== 40 ||
                           filters.marketValueRange[0] !== 0 || 
                           filters.marketValueRange[1] !== 150 ||
-                          filters.minSimilarity > 0;
+                          filters.minSimilarity > 0 ||
+                          filters.topN !== 'all';
 
   return (
     <Card className="border-primary/20">
@@ -114,6 +125,29 @@ export const ResultsFilters = ({ players, onFilterChange }: ResultsFiltersProps)
 
         {isExpanded && (
           <div className="space-y-6">
+            {/* Top Similarity */}
+            <div>
+              <label className="text-sm font-medium mb-3 block">Top Similarity</label>
+              <Select
+                value={filters.topN.toString()}
+                onValueChange={(value) => setFilters(prev => ({ 
+                  ...prev, 
+                  topN: value === 'all' ? 'all' : parseInt(value)
+                }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select top N" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All players</SelectItem>
+                  <SelectItem value="10">Top 10</SelectItem>
+                  <SelectItem value="25">Top 25</SelectItem>
+                  <SelectItem value="50">Top 50</SelectItem>
+                  <SelectItem value="100">Top 100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Age Range */}
             <div>
               <label className="text-sm font-medium mb-3 block">
