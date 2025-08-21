@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlayerCard } from './PlayerCard';
@@ -19,7 +19,7 @@ export const ResultsDisplay = ({ selectedPlayer, onPlayerSelect }: ResultsDispla
   const [filteredPlayers, setFilteredPlayers] = useState<(Player & { similarity: number })[]>(similarPlayers);
 
   // Update filtered players when similar players change
-  useMemo(() => {
+  useEffect(() => {
     setFilteredPlayers(similarPlayers);
   }, [similarPlayers]);
 
