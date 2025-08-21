@@ -52,7 +52,7 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {selectedPlayer ? (
-          <ResultsDisplay selectedPlayer={selectedPlayer} />
+          <ResultsDisplay selectedPlayer={selectedPlayer} onPlayerSelect={handlePlayerSelect} />
         ) : (
           <div className="space-y-8">
             {/* Data Summary - only show if we have imported data */}

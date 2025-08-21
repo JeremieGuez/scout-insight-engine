@@ -2,15 +2,17 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlayerCard } from './PlayerCard';
+import { SearchInterface } from './SearchInterface';
 import { Player, findSimilarPlayers } from '@/data/players';
 import { usePlayerData } from '@/hooks/usePlayerData';
 import { Download, Target, Users, TrendingUp } from 'lucide-react';
 
 interface ResultsDisplayProps {
   selectedPlayer: Player;
+  onPlayerSelect: (player: Player) => void;
 }
 
-export const ResultsDisplay = ({ selectedPlayer }: ResultsDisplayProps) => {
+export const ResultsDisplay = ({ selectedPlayer, onPlayerSelect }: ResultsDisplayProps) => {
   const { players } = usePlayerData();
   const similarPlayers = findSimilarPlayers(selectedPlayer, 5, players);
 
@@ -62,6 +64,11 @@ export const ResultsDisplay = ({ selectedPlayer }: ResultsDisplayProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Search Interface */}
+      <div className="mb-6">
+        <SearchInterface onPlayerSelect={onPlayerSelect} selectedPlayer={selectedPlayer} />
+      </div>
+      
       {/* Search Result Header */}
       <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
         <CardHeader>

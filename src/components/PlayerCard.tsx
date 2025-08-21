@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/data/players";
 import { Trophy, Target, Zap, TrendingUp, Users, MessageSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface PlayerCardProps {
   player: Player & { similarity?: number };
@@ -9,6 +10,8 @@ interface PlayerCardProps {
 }
 
 export const PlayerCard = ({ player, showSimilarity = false }: PlayerCardProps) => {
+  const navigate = useNavigate();
+  
   const getPositionColor = (position: string) => {
     if (position === 'GK') return 'bg-yellow-100 text-yellow-800 border-yellow-300';
     if (['CB', 'LB', 'RB'].includes(position)) return 'bg-blue-100 text-blue-800 border-blue-300';
@@ -23,12 +26,15 @@ export const PlayerCard = ({ player, showSimilarity = false }: PlayerCardProps) 
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] bg-gradient-to-br from-white to-accent/20">
+    <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] bg-gradient-to-br from-white to-accent/20 cursor-pointer">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
+              <h3 
+                className="font-bold text-lg text-foreground group-hover:text-primary transition-colors hover:underline"
+                onClick={() => navigate(`/player/${player.id}`)}
+              >
                 {player.name}
               </h3>
               {showSimilarity && player.similarity && (
