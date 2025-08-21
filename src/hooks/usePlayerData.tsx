@@ -88,6 +88,9 @@ function estimateMarketValue(age: number, goals: number, assists: number, minute
 function csvRowToPlayer(row: FBrefPlayerRow, index: number): Player {
   const { league, country } = normalizeLeague(row.Comp);
   
+  // Check for market value column (various possible names) - use index access for dynamic properties
+  const marketValueFromCSV = (row as any)["Market Value"] || (row as any)["market value"] || (row as any)["Market_Value"] || (row as any)["market_value"];
+  
   return {
     id: `csv-player-${index}`,
     name: row.Player.trim(),
@@ -96,6 +99,16 @@ function csvRowToPlayer(row: FBrefPlayerRow, index: number): Player {
     position: normalizePosition(row.Pos),
     league,
     country,
+    
+    // Market value - use CSV value if available, otherwise estimate
+    marketValue: marketValueFromCSV ? safeParseFloat(marketValueFromCSV) : 
+      estimateMarketValue(
+        row.Age ? safeParseInt(row.Age) : 25,
+        row.Gls ? safeParseInt(row.Gls) : 0,
+        row.Ast ? safeParseInt(row.Ast) : 0,
+        row.Min ? safeParseInt(row.Min) : 0,
+        normalizePosition(row.Pos)
+      ),
     
     // Basic CSV stats - only use what's present
     goals: row.Gls ? safeParseInt(row.Gls) : undefined,
