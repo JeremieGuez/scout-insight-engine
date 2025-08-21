@@ -55,9 +55,6 @@ const Index = () => {
           <ResultsDisplay selectedPlayer={selectedPlayer} onPlayerSelect={handlePlayerSelect} />
         ) : (
           <div className="space-y-8">
-            {/* Data Summary - only show if we have imported data */}
-            {lastImportStats && <DataSummary />}
-            
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -70,9 +67,12 @@ const Index = () => {
               </div>
               
               {/* Search Interface */}
-              <div className="mb-12">
+              <div className="mb-6">
                 <SearchInterface onPlayerSelect={handlePlayerSelect} />
               </div>
+              
+              {/* Data Summary - compact version under search */}
+              {lastImportStats && <DataSummary />}
               
               {/* CSV Import - only show if no data imported yet */}
               {!lastImportStats && (

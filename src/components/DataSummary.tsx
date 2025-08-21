@@ -42,12 +42,12 @@ export const DataSummary = () => {
   if (!lastImportStats) return null;
 
   return (
-    <Card className="mb-6 border-primary/20 bg-gradient-to-r from-background to-primary/5">
-      <CardHeader className="pb-3">
+    <Card className="mb-6 border-primary/10 bg-card">
+      <CardHeader className="pb-2 px-4 py-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Database className="h-5 w-5 text-primary" />
-            Data Summary
+          <CardTitle className="flex items-center gap-2 text-sm font-medium">
+            <Database className="h-4 w-4 text-primary" />
+            Imported Data
           </CardTitle>
           <div className="flex gap-2">
             <Button
@@ -73,40 +73,30 @@ export const DataSummary = () => {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-primary">{lastImportStats.uniquePlayers.toLocaleString()}</div>
-            <div className="text-xs text-muted-foreground">Unique Players</div>
+      <CardContent className="pt-0 px-4 pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-1">
+              <Users className="h-3 w-3 text-primary" />
+              <span className="font-medium">{lastImportStats.uniquePlayers.toLocaleString()}</span>
+              <span className="text-muted-foreground">players</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Globe className="h-3 w-3 text-secondary" />
+              <span className="font-medium">{lastImportStats.leagues.length}</span>
+              <span className="text-muted-foreground">leagues</span>
+            </div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-secondary">{lastImportStats.leagues.length}</div>
-            <div className="text-xs text-muted-foreground">Leagues</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-accent">{lastImportStats.totalRows.toLocaleString()}</div>
-            <div className="text-xs text-muted-foreground">CSV Rows</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-muted-foreground">{lastImportStats.skippedRows}</div>
-            <div className="text-xs text-muted-foreground">Skipped</div>
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Leagues:</span>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {lastImportStats.leagues.slice(0, 12).map((league) => (
-              <Badge key={league} variant="outline" className="text-xs">
+          
+          <div className="flex flex-wrap gap-1 max-w-md">
+            {lastImportStats.leagues.slice(0, 6).map((league) => (
+              <Badge key={league} variant="outline" className="text-xs py-0 px-1">
                 {league}
               </Badge>
             ))}
-            {lastImportStats.leagues.length > 12 && (
-              <Badge variant="outline" className="text-xs">
-                +{lastImportStats.leagues.length - 12} more
+            {lastImportStats.leagues.length > 6 && (
+              <Badge variant="outline" className="text-xs py-0 px-1">
+                +{lastImportStats.leagues.length - 6}
               </Badge>
             )}
           </div>
