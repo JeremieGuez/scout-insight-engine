@@ -86,6 +86,11 @@ export const DataSummary = () => {
               <span className="font-medium">{lastImportStats.leagues.length}</span>
               <span className="text-muted-foreground">leagues</span>
             </div>
+            <div className="flex items-center gap-1">
+              <Database className="h-3 w-3 text-accent-foreground" />
+              <span className="font-medium">267+</span>
+              <span className="text-muted-foreground">stats</span>
+            </div>
           </div>
           
           <div className="flex flex-wrap gap-1 max-w-md">
