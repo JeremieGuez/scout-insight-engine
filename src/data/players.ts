@@ -1,37 +1,69 @@
 export interface Player {
   id: string;
   name: string;
-  age: number;
+  age?: number;
   club: string;
   position: string;
   league: string;
   country: string;
   
-  // Performance stats
-  goals: number;
-  assists: number;
-  tackles: number;
-  interceptions: number;
-  passAccuracy: number;
-  forwardPasses: number;
-  kmCovered: number;
+  // Basic CSV stats
+  goals?: number;
+  assists?: number;
+  minutes?: number;
+  nineties?: number; // 90s played
   
-  // Style of play stats
-  tempo: number; // 1-10 scale
-  pressingIntensity: number; // 1-10 scale
-  aggressivenessIndex: number; // 1-10 scale
+  // Expected stats (FBref)
+  xG?: number;
+  npxG?: number;
+  xAG?: number;
+  npxGPlusxAG?: number;
   
-  // Media profile
-  pressMentions: number;
-  sentimentScore: number; // -100 to 100
-  socialMediaActivity: number; // 1-10 scale
-  followersCount: number;
+  // Progressive stats
+  prgC?: number; // Progressive carries
+  prgP?: number; // Progressive passes
+  prgR?: number; // Progressive receptions
   
-  // Additional scouting data
-  marketValue: number; // in millions
-  contractExpiry: string;
-  height: number; // in cm
-  preferredFoot: 'Left' | 'Right' | 'Both';
+  // Shooting stats
+  shots?: number;
+  shotsOnTarget?: number;
+  shotAccuracy?: number; // SoT%
+  shotsOn90?: number; // Sh/90
+  
+  // Passing stats  
+  passAttempts?: number;
+  passCompleted?: number;
+  passAccuracy?: number; // Cmp%
+  totalPassDistance?: number;
+  progressivePassDistance?: number;
+  
+  // Defensive stats
+  tackles?: number;
+  tacklesWon?: number;
+  interceptions?: number;
+  blocks?: number;
+  clearances?: number;
+  
+  // Goalkeeper stats
+  saves?: number;
+  savePercentage?: number;
+  cleanSheets?: number;
+  goalsAgainst?: number;
+  
+  // Legacy fields (for backward compatibility with generated data)
+  forwardPasses?: number;
+  kmCovered?: number;
+  tempo?: number;
+  pressingIntensity?: number;
+  aggressivenessIndex?: number;
+  pressMentions?: number;
+  sentimentScore?: number;
+  socialMediaActivity?: number;
+  followersCount?: number;
+  marketValue?: number;
+  contractExpiry?: string;
+  height?: number;
+  preferredFoot?: 'Left' | 'Right' | 'Both';
   imageUrl?: string;
 }
 
@@ -162,28 +194,133 @@ export function searchPlayers(query: string, playerList: Player[] = players): Pl
 }
 
 export function calculateSimilarity(player1: Player, player2: Player): number {
-  // Basic similarity calculation
+  // Position must match exactly
   if (player1.position !== player2.position) return 0;
   
-  // Age similarity (reduced to 5%)
-  const ageDiff = Math.abs(player1.age - player2.age);
-  const ageSimilarity = Math.max(0, (10 - ageDiff) / 10) * 0.05;
+  let totalSimilarity = 0;
+  let totalWeight = 0;
   
-  // Performance similarity (normalized)
-  const performanceWeight = 0.4;
-  const performanceSimilarity = performanceWeight * (1 - Math.abs(
-    (player1.goals + player1.assists) - (player2.goals + player2.assists)
-  ) / 50);
+  // Age similarity (10% weight)
+  if (player1.age != null && player2.age != null) {
+    const ageDiff = Math.abs(player1.age - player2.age);
+    const ageSimilarity = Math.max(0, (8 - ageDiff) / 8);
+    totalSimilarity += ageSimilarity * 0.1;
+    totalWeight += 0.1;
+  }
   
-  // Style similarity
-  const styleWeight = 0.3;
-  const styleSimilarity = styleWeight * (1 - (
-    Math.abs(player1.tempo - player2.tempo) +
-    Math.abs(player1.pressingIntensity - player2.pressingIntensity) +
-    Math.abs(player1.aggressivenessIndex - player2.aggressivenessIndex)
-  ) / 30);
+  // Minutes played similarity (5% weight) - helps compare players with similar game time
+  if (player1.minutes != null && player2.minutes != null) {
+    const minDiff = Math.abs(player1.minutes - player2.minutes);
+    const minSimilarity = Math.max(0, 1 - minDiff / 3000); // Max diff ~3000 minutes
+    totalSimilarity += minSimilarity * 0.05;
+    totalWeight += 0.05;
+  }
   
-  return Math.min(1, ageSimilarity + performanceSimilarity + styleSimilarity);
+  // Position-specific similarity calculation
+  const isGoalkeeper = player1.position === 'GK';
+  const isDefender = ['CB', 'LB', 'RB', 'WB'].includes(player1.position);
+  const isMidfielder = ['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(player1.position);
+  const isAttacker = ['LW', 'RW', 'ST', 'CF'].includes(player1.position);
+  
+  if (isGoalkeeper) {
+    // For goalkeepers: saves, clean sheets, save percentage
+    if (player1.saves != null && player2.saves != null) {
+      const savesDiff = Math.abs(player1.saves - player2.saves);
+      const savesSimilarity = Math.max(0, 1 - savesDiff / 100);
+      totalSimilarity += savesSimilarity * 0.4;
+      totalWeight += 0.4;
+    }
+    
+    if (player1.savePercentage != null && player2.savePercentage != null) {
+      const savePctDiff = Math.abs(player1.savePercentage - player2.savePercentage);
+      const savePctSimilarity = Math.max(0, 1 - savePctDiff / 30);
+      totalSimilarity += savePctSimilarity * 0.3;
+      totalWeight += 0.3;
+    }
+  } else {
+    // For outfield players: goals and assists (25% weight)
+    if (player1.goals != null && player2.goals != null && player1.assists != null && player2.assists != null) {
+      const goalsDiff = Math.abs(player1.goals - player2.goals);
+      const assistsDiff = Math.abs(player1.assists - player2.assists);
+      const attackingSimilarity = Math.max(0, 1 - (goalsDiff + assistsDiff) / 30);
+      totalSimilarity += attackingSimilarity * 0.25;
+      totalWeight += 0.25;
+    }
+    
+    // Expected stats similarity (20% weight)
+    if (player1.xG != null && player2.xG != null) {
+      const xGDiff = Math.abs(player1.xG - player2.xG);
+      const xGSimilarity = Math.max(0, 1 - xGDiff / 20);
+      totalSimilarity += xGSimilarity * 0.1;
+      totalWeight += 0.1;
+    }
+    
+    if (player1.xAG != null && player2.xAG != null) {
+      const xAGDiff = Math.abs(player1.xAG - player2.xAG);
+      const xAGSimilarity = Math.max(0, 1 - xAGDiff / 15);
+      totalSimilarity += xAGSimilarity * 0.1;
+      totalWeight += 0.1;
+    }
+  }
+  
+  // Position-specific advanced stats
+  if (isDefender) {
+    // Defensive stats (30% weight for defenders)
+    if (player1.tackles != null && player2.tackles != null) {
+      const tackleDiff = Math.abs(player1.tackles - player2.tackles);
+      const tackleSimilarity = Math.max(0, 1 - tackleDiff / 60);
+      totalSimilarity += tackleSimilarity * 0.15;
+      totalWeight += 0.15;
+    }
+    
+    if (player1.interceptions != null && player2.interceptions != null) {
+      const intDiff = Math.abs(player1.interceptions - player2.interceptions);
+      const intSimilarity = Math.max(0, 1 - intDiff / 40);
+      totalSimilarity += intSimilarity * 0.15;
+      totalWeight += 0.15;
+    }
+  } else if (isMidfielder) {
+    // Passing stats (30% weight for midfielders)
+    if (player1.passAccuracy != null && player2.passAccuracy != null) {
+      const passDiff = Math.abs(player1.passAccuracy - player2.passAccuracy);
+      const passSimilarity = Math.max(0, 1 - passDiff / 25);
+      totalSimilarity += passSimilarity * 0.15;
+      totalWeight += 0.15;
+    }
+    
+    if (player1.prgP != null && player2.prgP != null) {
+      const prgPDiff = Math.abs(player1.prgP - player2.prgP);
+      const prgPSimilarity = Math.max(0, 1 - prgPDiff / 100);
+      totalSimilarity += prgPSimilarity * 0.15;
+      totalWeight += 0.15;
+    }
+  } else if (isAttacker) {
+    // Shooting stats (30% weight for attackers)
+    if (player1.shotsOn90 != null && player2.shotsOn90 != null) {
+      const shotsDiff = Math.abs(player1.shotsOn90 - player2.shotsOn90);
+      const shotsSimilarity = Math.max(0, 1 - shotsDiff / 3);
+      totalSimilarity += shotsSimilarity * 0.15;
+      totalWeight += 0.15;
+    }
+    
+    if (player1.shotAccuracy != null && player2.shotAccuracy != null) {
+      const shotAccDiff = Math.abs(player1.shotAccuracy - player2.shotAccuracy);
+      const shotAccSimilarity = Math.max(0, 1 - shotAccDiff / 40);
+      totalSimilarity += shotAccSimilarity * 0.15;
+      totalWeight += 0.15;
+    }
+  }
+  
+  // Progressive actions (10% weight for all outfield players)
+  if (!isGoalkeeper && player1.prgC != null && player2.prgC != null) {
+    const prgCDiff = Math.abs(player1.prgC - player2.prgC);
+    const prgCSimilarity = Math.max(0, 1 - prgCDiff / 50);
+    totalSimilarity += prgCSimilarity * 0.1;
+    totalWeight += 0.1;
+  }
+  
+  // Return normalized similarity (0-1)
+  return totalWeight > 0 ? Math.min(1, totalSimilarity / totalWeight) : 0;
 }
 
 export function findSimilarPlayers(targetPlayer: Player, count: number = 5, playerList: Player[] = players): Array<Player & { similarity: number }> {
