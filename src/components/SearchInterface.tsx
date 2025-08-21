@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Search, X } from "lucide-react";
 import { Player, searchPlayers } from '@/data/players';
+import { usePlayerData } from '@/hooks/usePlayerData';
 import { cn } from '@/lib/utils';
 
 interface SearchInterfaceProps {
@@ -18,10 +19,11 @@ export const SearchInterface = ({ onPlayerSelect, selectedPlayer }: SearchInterf
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const { players } = usePlayerData();
 
   useEffect(() => {
     if (query.length >= 2) {
-      const results = searchPlayers(query);
+      const results = searchPlayers(query, players);
       setSuggestions(results);
       setShowSuggestions(true);
       setHighlightedIndex(-1);
@@ -29,7 +31,7 @@ export const SearchInterface = ({ onPlayerSelect, selectedPlayer }: SearchInterf
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  }, [query]);
+  }, [query, players]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);

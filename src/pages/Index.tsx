@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { SearchInterface } from '@/components/SearchInterface';
 import { ResultsDisplay } from '@/components/ResultsDisplay';
+import { CSVImport } from '@/components/CSVImport';
 import { Player } from '@/data/players';
 import { Card, CardContent } from '@/components/ui/card';
 import { Target, Users, TrendingUp, BarChart3 } from 'lucide-react';
+import { usePlayerData } from '@/hooks/usePlayerData';
 
 const Index = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | undefined>();
+  const { totalPlayers } = usePlayerData();
 
   const handlePlayerSelect = (player: Player) => {
     setSelectedPlayer(player);
@@ -30,7 +33,7 @@ const Index = () => {
             <div className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span>520+ Players</span>
+                <span>{totalPlayers}+ Players</span>
               </div>
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
@@ -57,14 +60,23 @@ const Index = () => {
               </h2>
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
                 Discover similar players using our advanced AI recommendation engine. 
-                Search through 520+ professional players across Europe's top leagues.
+                Search through {totalPlayers}+ professional players across Europe's top leagues.
               </p>
             </div>
 
+            {/* CSV Import */}
+            {totalPlayers === 0 && (
+              <div className="mb-12">
+                <CSVImport />
+              </div>
+            )}
+
             {/* Search Interface */}
-            <div className="mb-12">
-              <SearchInterface onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />
-            </div>
+            {totalPlayers > 0 && (
+              <div className="mb-12">
+                <SearchInterface onPlayerSelect={handlePlayerSelect} selectedPlayer={selectedPlayer} />
+              </div>
+            )}
 
             {/* Feature Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">

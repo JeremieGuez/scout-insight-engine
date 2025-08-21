@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlayerCard } from './PlayerCard';
 import { Player, findSimilarPlayers } from '@/data/players';
+import { usePlayerData } from '@/hooks/usePlayerData';
 import { Download, Target, Users, TrendingUp } from 'lucide-react';
 
 interface ResultsDisplayProps {
@@ -10,7 +11,8 @@ interface ResultsDisplayProps {
 }
 
 export const ResultsDisplay = ({ selectedPlayer }: ResultsDisplayProps) => {
-  const similarPlayers = findSimilarPlayers(selectedPlayer, 5);
+  const { players } = usePlayerData();
+  const similarPlayers = findSimilarPlayers(selectedPlayer, 5, players);
 
   const exportToCsv = () => {
     const headers = [

@@ -150,11 +150,11 @@ export const players: Player[] = Array.from({ length: 520 }, (_, i) =>
 );
 
 // Helper functions for search and filtering
-export function searchPlayers(query: string): Player[] {
+export function searchPlayers(query: string, playerList: Player[] = players): Player[] {
   if (!query.trim()) return [];
   
   const searchTerm = query.toLowerCase();
-  return players.filter(player => 
+  return playerList.filter(player => 
     player.name.toLowerCase().includes(searchTerm) ||
     player.club.toLowerCase().includes(searchTerm) ||
     player.position.toLowerCase().includes(searchTerm)
@@ -190,8 +190,8 @@ export function calculateSimilarity(player1: Player, player2: Player): number {
   return Math.min(1, leagueSimilarity + ageSimilarity + performanceSimilarity + styleSimilarity);
 }
 
-export function findSimilarPlayers(targetPlayer: Player, count: number = 5): Array<Player & { similarity: number }> {
-  return players
+export function findSimilarPlayers(targetPlayer: Player, count: number = 5, playerList: Player[] = players): Array<Player & { similarity: number }> {
+  return playerList
     .filter(player => player.id !== targetPlayer.id)
     .map(player => ({
       ...player,
