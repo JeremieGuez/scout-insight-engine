@@ -140,6 +140,26 @@ export function PlayerDataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [lastImportStats, setLastImportStats] = useState<ImportStats | null>(null);
 
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem('scout360-player-data');
+    const savedStats = localStorage.getItem('scout360-import-stats');
+    
+    if (savedData && savedStats) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        const parsedStats = JSON.parse(savedStats);
+        setPlayers(parsedData);
+        setLastImportStats(parsedStats);
+        console.log('✅ Loaded', parsedData.length, 'players from localStorage');
+      } catch (error) {
+        console.error('❌ Error loading saved data:', error);
+        localStorage.removeItem('scout360-player-data');
+        localStorage.removeItem('scout360-import-stats');
+      }
+    }
+  }, []);
+
   const loadFromCSV = async (file: File) => {
     setIsLoading(true);
     setError(null);
@@ -207,6 +227,10 @@ export function PlayerDataProvider({ children }: { children: ReactNode }) {
           };
           
           console.log('🎯 Final result:', stats);
+          
+          // Save to localStorage for persistence
+          localStorage.setItem('scout360-player-data', JSON.stringify(uniquePlayers));
+          localStorage.setItem('scout360-import-stats', JSON.stringify(stats));
           
           setPlayers(uniquePlayers);
           setLastImportStats(stats);

@@ -74,10 +74,12 @@ const Index = () => {
                 <SearchInterface onPlayerSelect={handlePlayerSelect} />
               </div>
               
-              {/* CSV Import */}
-              <div className="mb-12">
-                <CSVImport />
-              </div>
+              {/* CSV Import - only show if no data imported yet */}
+              {!lastImportStats && (
+                <div className="mb-12">
+                  <CSVImport />
+                </div>
+              )}
               
               {/* Features Grid */}
               <div className="grid md:grid-cols-3 gap-6 mb-12">
