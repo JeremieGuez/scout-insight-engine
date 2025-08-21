@@ -165,13 +165,9 @@ export function calculateSimilarity(player1: Player, player2: Player): number {
   // Basic similarity calculation
   if (player1.position !== player2.position) return 0;
   
-  // League similarity bonus
-  const leagueSimilarity = player1.league === player2.league ? 0.2 : 
-    (player1.country === player2.country ? 0.1 : 0);
-  
-  // Age similarity
+  // Age similarity (reduced to 5%)
   const ageDiff = Math.abs(player1.age - player2.age);
-  const ageSimilarity = Math.max(0, (10 - ageDiff) / 10) * 0.1;
+  const ageSimilarity = Math.max(0, (10 - ageDiff) / 10) * 0.05;
   
   // Performance similarity (normalized)
   const performanceWeight = 0.4;
@@ -187,7 +183,7 @@ export function calculateSimilarity(player1: Player, player2: Player): number {
     Math.abs(player1.aggressivenessIndex - player2.aggressivenessIndex)
   ) / 30);
   
-  return Math.min(1, leagueSimilarity + ageSimilarity + performanceSimilarity + styleSimilarity);
+  return Math.min(1, ageSimilarity + performanceSimilarity + styleSimilarity);
 }
 
 export function findSimilarPlayers(targetPlayer: Player, count: number = 5, playerList: Player[] = players): Array<Player & { similarity: number }> {
