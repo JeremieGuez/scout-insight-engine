@@ -26,124 +26,160 @@ export const PlayerCard = ({ player, showSimilarity = false }: PlayerCardProps) 
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] bg-gradient-to-br from-white to-accent/20 cursor-pointer">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
+    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-card via-card to-card/95">
+      <CardContent className="p-6">
+        {/* Header with name and position */}
+        <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 
-                className="font-bold text-lg text-foreground group-hover:text-primary transition-colors hover:underline"
-                onClick={() => navigate(`/player/${player.id}`)}
-              >
+            <button
+              onClick={() => navigate(`/player/${player.id}`)}
+              className="text-left hover:text-primary transition-colors"
+            >
+              <h3 className="text-lg font-bold text-foreground hover:text-primary transition-colors truncate">
                 {player.name}
               </h3>
-              {showSimilarity && player.similarity && (
-                <Badge variant="secondary" className="bg-primary/10 text-primary">
-                  {(player.similarity * 100).toFixed(0)}% match
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="font-medium">{player.club}</span>
-              <span>•</span>
-              <Badge className={getPositionColor(player.position)} variant="outline">
+            </button>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge className={`${getPositionColor(player.position)} text-xs font-medium`}>
                 {player.position}
               </Badge>
-              <span>•</span>
-              <span>{player.age} years</span>
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {player.league} • {player.country}
+              {player.age && (
+                <span className="text-sm text-muted-foreground">{player.age} ans</span>
+              )}
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-sm font-semibold text-primary">
-              €{player.marketValue}M
+          {showSimilarity && player.similarity && (
+            <div className="text-right">
+              <div className="text-sm font-semibold text-primary">
+                {Math.round(player.similarity * 100)}%
+              </div>
+              <div className="text-xs text-muted-foreground">Match</div>
             </div>
-            <div className="text-xs text-muted-foreground">
-              {player.height}cm • {player.preferredFoot}
-            </div>
-          </div>
+          )}
         </div>
-      </CardHeader>
-      
-      <CardContent className="pt-0">
-        {/* Performance Stats */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Trophy className="h-4 w-4 text-yellow-600" />
-              <span className="text-muted-foreground">Goals:</span>
-              <span className="font-semibold text-primary">{player.goals}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Target className="h-4 w-4 text-blue-600" />
-              <span className="text-muted-foreground">Assists:</span>
-              <span className="font-semibold text-primary">{player.assists}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Zap className="h-4 w-4 text-green-600" />
-              <span className="text-muted-foreground">Pass Acc:</span>
-              <span className="font-semibold text-primary">{player.passAccuracy}%</span>
-            </div>
+
+        {/* Club and League */}
+        <div className="mb-4 space-y-1">
+          <div className="flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium text-foreground">{player.club}</span>
           </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="h-4 w-4 bg-orange-500 rounded-full flex items-center justify-center">
-                <div className="h-2 w-2 bg-white rounded-full"></div>
-              </div>
-              <span className="text-muted-foreground">Tempo:</span>
-              <span className="font-semibold text-primary">{player.tempo}/10</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <div className="h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
-                <div className="h-2 w-2 bg-white rounded-full"></div>
-              </div>
-              <span className="text-muted-foreground">Pressing:</span>
-              <span className="font-semibold text-primary">{player.pressingIntensity}/10</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <div className="h-4 w-4 bg-purple-500 rounded-full flex items-center justify-center">
-                <div className="h-2 w-2 bg-white rounded-full"></div>
-              </div>
-              <span className="text-muted-foreground">Aggress:</span>
-              <span className="font-semibold text-primary">{player.aggressivenessIndex}/10</span>
-            </div>
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {player.league} • {player.country}
+            </span>
           </div>
         </div>
 
-        {/* Media Profile */}
-        <div className="border-t pt-3">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Media:</span>
-              <span className="font-medium">{player.pressMentions} mentions</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <TrendingUp className={`h-4 w-4 ${getSentimentColor(player.sentimentScore)}`} />
-              <span className={`font-medium ${getSentimentColor(player.sentimentScore)}`}>
-                {player.sentimentScore > 0 ? '+' : ''}{player.sentimentScore}
-              </span>
+        {/* Performance Stats - Only CSV data */}
+        <div className="space-y-3">
+          <div className="border-t pt-3">
+            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Performance</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center">
+                <div className="text-lg font-bold text-foreground">
+                  {player.goals ?? 'N/A'}
+                </div>
+                <div className="text-xs text-muted-foreground">Buts</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-foreground">
+                  {player.assists ?? 'N/A'}
+                </div>
+                <div className="text-xs text-muted-foreground">Passes D.</div>
+              </div>
+              {player.minutes && (
+                <div className="text-center">
+                  <div className="text-lg font-bold text-foreground">
+                    {player.minutes.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Minutes</div>
+                </div>
+              )}
+              {player.nineties && (
+                <div className="text-center">
+                  <div className="text-lg font-bold text-foreground">
+                    {player.nineties.toFixed(1)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Matchs (90')</div>
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex items-center justify-between text-sm mt-1">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Followers:</span>
-              <span className="font-medium">
-                {player.followersCount > 1000000 
-                  ? `${(player.followersCount / 1000000).toFixed(1)}M`
-                  : `${Math.floor(player.followersCount / 1000)}K`
-                }
-              </span>
+
+          {/* Expected Stats */}
+          {(player.xG || player.xAG) && (
+            <div className="border-t pt-3">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-2">Expected Stats</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {player.xG && (
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-foreground">
+                      {player.xG.toFixed(1)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">xG</div>
+                  </div>
+                )}
+                {player.xAG && (
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-foreground">
+                      {player.xAG.toFixed(1)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">xAG</div>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Contract:</span>
-              <span className="font-medium text-primary">{player.contractExpiry.split('-')[0]}</span>
+          )}
+
+          {/* Progressive Stats */}
+          {(player.prgC || player.prgP || player.prgR) && (
+            <div className="border-t pt-3">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-2">Actions Progressives</h4>
+              <div className="grid grid-cols-3 gap-2">
+                {player.prgC && (
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-foreground">{player.prgC}</div>
+                    <div className="text-xs text-muted-foreground">Courses</div>
+                  </div>
+                )}
+                {player.prgP && (
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-foreground">{player.prgP}</div>
+                    <div className="text-xs text-muted-foreground">Passes</div>
+                  </div>
+                )}
+                {player.prgR && (
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-foreground">{player.prgR}</div>
+                    <div className="text-xs text-muted-foreground">Réceptions</div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Defensive Stats for defenders */}
+          {(['CB', 'LB', 'RB', 'WB'].includes(player.position) && (player.tackles || player.interceptions)) && (
+            <div className="border-t pt-3">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-2">Défense</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {player.tackles && (
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-foreground">{player.tackles}</div>
+                    <div className="text-xs text-muted-foreground">Tacles</div>
+                  </div>
+                )}
+                {player.interceptions && (
+                  <div className="text-center">
+                    <div className="text-sm font-bold text-foreground">{player.interceptions}</div>
+                    <div className="text-xs text-muted-foreground">Interceptions</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

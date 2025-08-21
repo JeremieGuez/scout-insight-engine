@@ -139,14 +139,18 @@ export const SearchInterface = ({ onPlayerSelect, selectedPlayer }: SearchInterf
                     </span>
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    {player.club} • {player.league} • {player.age} years
+                    {player.club} • {player.league} • {player.age ? `${player.age} ans` : 'Âge N/A'}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-medium text-primary">€{player.marketValue}M</div>
                   <div className="text-xs text-muted-foreground">
-                    {player.goals}G • {player.assists}A
+                    {player.goals ?? 'N/A'}G • {player.assists ?? 'N/A'}A
                   </div>
+                  {player.minutes && (
+                    <div className="text-xs text-muted-foreground">
+                      {player.minutes}'
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -162,7 +166,7 @@ export const SearchInterface = ({ onPlayerSelect, selectedPlayer }: SearchInterf
                 Selected: {selectedPlayer.name}
               </h3>
               <p className="text-sm text-muted-foreground">
-                {selectedPlayer.club} • {selectedPlayer.position} • {selectedPlayer.age} years
+                {selectedPlayer.club} • {selectedPlayer.position} • {selectedPlayer.age ? `${selectedPlayer.age} ans` : 'Âge N/A'}
               </p>
             </div>
             <Button

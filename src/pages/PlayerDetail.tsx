@@ -55,12 +55,6 @@ const PlayerDetail = () => {
     return 'bg-red-100 text-red-800 border-red-300';
   };
 
-  const getSentimentColor = (score: number) => {
-    if (score >= 20) return 'text-green-600';
-    if (score >= 0) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-accent/5 to-primary/5">
       {/* Header */}
@@ -111,42 +105,38 @@ const PlayerDetail = () => {
 
                 {/* Player Info */}
                 <div className="flex-1">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h1 className="text-3xl font-bold text-foreground mb-2">{player.name}</h1>
-                      <div className="flex items-center gap-4 text-muted-foreground">
+                  <div>
+                    <h1 className="text-3xl font-bold text-foreground mb-2">{player.name}</h1>
+                    <div className="flex items-center gap-4 text-muted-foreground mb-4">
+                      {player.age && (
                         <div className="flex items-center gap-1">
                           <User className="h-4 w-4" />
                           <span>{player.age} ans</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Shield className="h-4 w-4" />
-                          <span>{player.height}cm</span>
-                        </div>
+                      )}
+                      {player.minutes && (
                         <div className="flex items-center gap-1">
                           <Activity className="h-4 w-4" />
-                          <span>{player.preferredFoot}</span>
+                          <span>{player.minutes}' jouées</span>
                         </div>
+                      )}
+                      {player.nineties && (
+                        <div className="flex items-center gap-1">
+                          <BarChart3 className="h-4 w-4" />
+                          <span>{player.nineties.toFixed(1)} matchs</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Club Info */}
+                    <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg p-3">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Shield className="h-4 w-4 text-primary" />
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-foreground">€{player.marketValue}M</div>
-                      <div className="text-sm text-muted-foreground">Valeur marchande</div>
-                    </div>
-                  </div>
-
-                  {/* Club Info */}
-                  <div className="flex items-center gap-3 bg-primary/5 border border-primary/20 rounded-lg p-3">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Shield className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-foreground">{player.club}</div>
-                      <div className="text-sm text-muted-foreground">{player.league} • {player.country}</div>
-                    </div>
-                    <div className="ml-auto text-right">
-                      <div className="text-sm text-muted-foreground">Contrat jusqu'en</div>
-                      <div className="font-semibold text-foreground">{player.contractExpiry.split('-')[0]}</div>
+                      <div>
+                        <div className="font-semibold text-foreground">{player.club}</div>
+                        <div className="text-sm text-muted-foreground">{player.league} • {player.country}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -154,10 +144,10 @@ const PlayerDetail = () => {
             </div>
           </Card>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Performance Stats - Only CSV data */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             
-            {/* Performance */}
+            {/* Basic Performance */}
             <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
@@ -172,125 +162,157 @@ const PlayerDetail = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Buts</span>
-                    <span className="font-bold text-lg text-primary">{player.goals}</span>
+                    <span className="font-bold text-lg text-primary">{player.goals ?? 'N/A'}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Passes D.</span>
-                    <span className="font-bold text-lg text-primary">{player.assists}</span>
+                    <span className="font-bold text-lg text-primary">{player.assists ?? 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Précision</span>
-                    <span className="font-bold text-primary">{player.passAccuracy}%</span>
-                  </div>
+                  {player.minutes && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Minutes</span>
+                      <span className="font-bold text-primary">{player.minutes.toLocaleString()}</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Style de jeu */}
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                    <Zap className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Style de jeu</h3>
-                    <p className="text-xs text-muted-foreground">Caractéristiques</p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Tempo</span>
-                      <span className="font-semibold">{player.tempo}/10</span>
+            {/* Expected Stats */}
+            {(player.xG || player.xAG) && (
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                      <BarChart3 className="h-5 w-5 text-white" />
                     </div>
-                    <div className="w-full h-1.5 bg-muted rounded-full">
-                      <div 
-                        className="h-1.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all" 
-                        style={{ width: `${(player.tempo / 10) * 100}%` }}
-                      />
+                    <div>
+                      <h3 className="font-semibold text-foreground">Expected Stats</h3>
+                      <p className="text-xs text-muted-foreground">Métriques avancées</p>
                     </div>
                   </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Pressing</span>
-                      <span className="font-semibold">{player.pressingIntensity}/10</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-muted rounded-full">
-                      <div 
-                        className="h-1.5 bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all" 
-                        style={{ width: `${(player.pressingIntensity / 10) * 100}%` }}
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    {player.xG && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">xG</span>
+                        <span className="font-bold text-lg text-primary">{player.xG.toFixed(1)}</span>
+                      </div>
+                    )}
+                    {player.xAG && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">xAG</span>
+                        <span className="font-bold text-lg text-primary">{player.xAG.toFixed(1)}</span>
+                      </div>
+                    )}
+                    {player.npxG && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">npxG</span>
+                        <span className="font-bold text-primary">{player.npxG.toFixed(1)}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Défense */}
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-10 w-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                    <Shield className="h-5 w-5 text-white" />
+            {/* Progressive Actions */}
+            {(player.prgC || player.prgP || player.prgR) && (
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">Actions Progressives</h3>
+                      <p className="text-xs text-muted-foreground">Progression du jeu</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Défense</h3>
-                    <p className="text-xs text-muted-foreground">Actions défensives</p>
+                  <div className="space-y-2">
+                    {player.prgC && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Courses</span>
+                        <span className="font-bold text-lg text-primary">{player.prgC}</span>
+                      </div>
+                    )}
+                    {player.prgP && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Passes</span>
+                        <span className="font-bold text-lg text-primary">{player.prgP}</span>
+                      </div>
+                    )}
+                    {player.prgR && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Réceptions</span>
+                        <span className="font-bold text-primary">{player.prgR}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Tacles</span>
-                    <span className="font-bold text-lg text-primary">{player.tackles}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Interceptions</span>
-                    <span className="font-bold text-lg text-primary">{player.interceptions}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Km parcourus</span>
-                    <span className="font-bold text-primary">{player.kmCovered}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Médiatique */}
-            <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-10 w-10 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center">
-                    <Heart className="h-5 w-5 text-white" />
+            {/* Defensive Stats for defenders */}
+            {(['CB', 'LB', 'RB', 'WB'].includes(player.position) && (player.tackles || player.interceptions)) && (
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center">
+                      <Shield className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">Défense</h3>
+                      <p className="text-xs text-muted-foreground">Actions défensives</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">Médiatique</h3>
-                    <p className="text-xs text-muted-foreground">Popularité</p>
+                  <div className="space-y-2">
+                    {player.tackles && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Tacles</span>
+                        <span className="font-bold text-lg text-primary">{player.tackles}</span>
+                      </div>
+                    )}
+                    {player.interceptions && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Interceptions</span>
+                        <span className="font-bold text-lg text-primary">{player.interceptions}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Mentions</span>
-                    <span className="font-bold text-lg text-primary">{player.pressMentions}</span>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Passing Stats for midfielders */}
+            {(['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(player.position) && (player.passAccuracy || player.passCompleted)) && (
+              <Card className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+                      <Target className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">Passes</h3>
+                      <p className="text-xs text-muted-foreground">Distribution</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Sentiment</span>
-                    <span className={`font-bold ${getSentimentColor(player.sentimentScore)}`}>
-                      {player.sentimentScore > 0 ? '+' : ''}{player.sentimentScore}
-                    </span>
+                  <div className="space-y-2">
+                    {player.passAccuracy && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Précision</span>
+                        <span className="font-bold text-lg text-primary">{player.passAccuracy.toFixed(1)}%</span>
+                      </div>
+                    )}
+                    {player.passCompleted && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Réussies</span>
+                        <span className="font-bold text-primary">{player.passCompleted}</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Followers</span>
-                    <span className="font-bold text-primary">
-                      {player.followersCount > 1000000 
-                        ? `${(player.followersCount / 1000000).toFixed(1)}M`
-                        : `${Math.floor(player.followersCount / 1000)}K`
-                      }
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Similar Players */}
