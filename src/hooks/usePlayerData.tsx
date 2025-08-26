@@ -91,8 +91,26 @@ function csvRowToPlayer(row: FBrefPlayerRow, index: number): Player {
   // Check for market value column (various possible names) - use index access for dynamic properties
   const marketValueFromCSV = (row as any)["Market Value"] || (row as any)["market value"] || (row as any)["Market_Value"] || (row as any)["market_value"];
   
-  // Check for photo URL column (various possible names)
-  const photoUrl = (row as any)["photo_url"] || (row as any)["Photo URL"] || (row as any)["photo"] || (row as any)["image_url"] || (row as any)["image"] || (row as any)["imageUrl"];
+  // Check for photo URL column (various possible names, prioritizing pics_url)
+  const photoUrl = (row as any)["pics_url"] || (row as any)["Pics URL"] || (row as any)["photo_url"] || (row as any)["Photo URL"] || (row as any)["photo"] || (row as any)["image_url"] || (row as any)["image"] || (row as any)["imageUrl"];
+  
+  // Parse market value from formats like "6,00 mio. €" or "100 K €"
+  const parseMarketValue = (value: string): number => {
+    if (!value || typeof value !== 'string') return 0;
+    
+    const cleanValue = value.toLowerCase().replace(/[€\s]/g, '').replace(',', '.');
+    
+    if (cleanValue.includes('mio')) {
+      const numericValue = parseFloat(cleanValue.replace('mio', ''));
+      return isNaN(numericValue) ? 0 : numericValue;
+    } else if (cleanValue.includes('k')) {
+      const numericValue = parseFloat(cleanValue.replace('k', ''));
+      return isNaN(numericValue) ? 0 : numericValue / 1000; // Convert K to M
+    } else {
+      const numericValue = parseFloat(cleanValue);
+      return isNaN(numericValue) ? 0 : numericValue;
+    }
+  };
   
   return {
     id: `csv-player-${index}`,
@@ -103,8 +121,8 @@ function csvRowToPlayer(row: FBrefPlayerRow, index: number): Player {
     league,
     country,
     
-    // Market value - use CSV value if available, otherwise estimate
-    marketValue: marketValueFromCSV ? safeParseFloat(marketValueFromCSV) : 
+    // Market value - use CSV value with proper parsing if available, otherwise estimate
+    marketValue: marketValueFromCSV ? parseMarketValue(marketValueFromCSV) : 
       estimateMarketValue(
         row.Age ? safeParseInt(row.Age) : 25,
         row.Gls ? safeParseInt(row.Gls) : 0,

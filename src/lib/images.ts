@@ -4,7 +4,7 @@ import { Player } from "@/data/players";
  * Gets the image source for a player, with fallback to generated avatar
  */
 export function getPlayerImageSrc(player: Player): string {
-  // If player has imageUrl from CSV, use it
+  // If player has imageUrl from CSV (pics_url column), use it
   if (player.imageUrl && player.imageUrl.trim()) {
     return player.imageUrl;
   }
