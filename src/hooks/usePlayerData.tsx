@@ -86,13 +86,29 @@ function estimateMarketValue(age: number, goals: number, assists: number, minute
 }
 
 function csvRowToPlayer(row: FBrefPlayerRow, index: number): Player {
-  const { league, country } = normalizeLeague(row.Comp);
+  const { league, country } = normalizeLeague(row.Comp || row.comp || '');
   
-  // Check for market value column (various possible names) - use index access for dynamic properties
-  const marketValueFromCSV = (row as any)["Market Value"] || (row as any)["market value"] || (row as any)["Market_Value"] || (row as any)["market_value"];
+  // Function to find column value with multiple possible names (case insensitive)
+  const findColumnValue = (possibleNames: string[]): string | undefined => {
+    for (const name of possibleNames) {
+      for (const key of Object.keys(row)) {
+        if (key.toLowerCase() === name.toLowerCase()) {
+          return row[key];
+        }
+      }
+    }
+    return undefined;
+  };
   
-  // Check for photo URL column (various possible names, prioritizing pics_url)
-  const photoUrl = (row as any)["pics_url"] || (row as any)["Pics URL"] || (row as any)["photo_url"] || (row as any)["Photo URL"] || (row as any)["photo"] || (row as any)["image_url"] || (row as any)["image"] || (row as any)["imageUrl"];
+  // Check for market value column with various possible names
+  const marketValueFromCSV = findColumnValue([
+    'Market Value', 'market value', 'Market_Value', 'market_value', 'marketValue'
+  ]);
+  
+  // Check for photo URL column, prioritizing pics_url
+  const photoUrl = findColumnValue([
+    'pics_url', 'Pics URL', 'photo_url', 'Photo URL', 'photo', 'image_url', 'image', 'imageUrl'
+  ]);
   
   // Parse market value from formats like "6,00 mio. €" or "100 K €"
   const parseMarketValue = (value: string): number => {
@@ -111,13 +127,14 @@ function csvRowToPlayer(row: FBrefPlayerRow, index: number): Player {
       return isNaN(numericValue) ? 0 : numericValue;
     }
   };
-  
-  return {
+
+  // Create base player object with standard fields
+  const player: Player = {
     id: `csv-player-${index}`,
-    name: row.Player.trim(),
+    name: (row.Player || row.player || '').trim(),
     age: row.Age ? safeParseInt(row.Age) : undefined,
-    club: row.Squad.trim(),
-    position: normalizePosition(row.Pos),
+    club: (row.Squad || row.squad || row.Club || row.club || '').trim(),
+    position: normalizePosition(row.Pos || row.pos || row.Position || row.position || ''),
     league,
     country,
     
@@ -128,57 +145,71 @@ function csvRowToPlayer(row: FBrefPlayerRow, index: number): Player {
         row.Gls ? safeParseInt(row.Gls) : 0,
         row.Ast ? safeParseInt(row.Ast) : 0,
         row.Min ? safeParseInt(row.Min) : 0,
-        normalizePosition(row.Pos)
+        normalizePosition(row.Pos || row.pos || '')
       ),
     
-    // Basic CSV stats - only use what's present
-    goals: row.Gls ? safeParseInt(row.Gls) : undefined,
-    assists: row.Ast ? safeParseInt(row.Ast) : undefined,
-    minutes: row.Min ? safeParseInt(row.Min) : undefined,
-    nineties: row["90s"] ? safeParseFloat(row["90s"]) : undefined,
+    // Basic CSV stats
+    goals: findColumnValue(['Gls', 'goals', 'Goals']) ? safeParseInt(findColumnValue(['Gls', 'goals', 'Goals'])!) : undefined,
+    assists: findColumnValue(['Ast', 'assists', 'Assists']) ? safeParseInt(findColumnValue(['Ast', 'assists', 'Assists'])!) : undefined,
+    minutes: findColumnValue(['Min', 'minutes', 'Minutes']) ? safeParseInt(findColumnValue(['Min', 'minutes', 'Minutes'])!) : undefined,
+    nineties: findColumnValue(['90s', 'nineties']) ? safeParseFloat(findColumnValue(['90s', 'nineties'])!) : undefined,
     
     // Expected stats
-    xG: row.xG ? safeParseFloat(row.xG) : undefined,
-    npxG: row.npxG ? safeParseFloat(row.npxG) : undefined,
-    xAG: row.xAG ? safeParseFloat(row.xAG) : undefined,
-    npxGPlusxAG: row["npxG+xAG"] ? safeParseFloat(row["npxG+xAG"]) : undefined,
+    xG: findColumnValue(['xG']) ? safeParseFloat(findColumnValue(['xG'])!) : undefined,
+    npxG: findColumnValue(['npxG']) ? safeParseFloat(findColumnValue(['npxG'])!) : undefined,
+    xAG: findColumnValue(['xAG']) ? safeParseFloat(findColumnValue(['xAG'])!) : undefined,
+    npxGPlusxAG: findColumnValue(['npxG+xAG']) ? safeParseFloat(findColumnValue(['npxG+xAG'])!) : undefined,
     
     // Progressive stats
-    prgC: row.PrgC ? safeParseInt(row.PrgC) : undefined,
-    prgP: row.PrgP ? safeParseInt(row.PrgP) : undefined,
-    prgR: row.PrgR ? safeParseInt(row.PrgR) : undefined,
+    prgC: findColumnValue(['PrgC']) ? safeParseInt(findColumnValue(['PrgC'])!) : undefined,
+    prgP: findColumnValue(['PrgP']) ? safeParseInt(findColumnValue(['PrgP'])!) : undefined,
+    prgR: findColumnValue(['PrgR']) ? safeParseInt(findColumnValue(['PrgR'])!) : undefined,
     
     // Shooting stats
-    shots: row.Sh ? safeParseInt(row.Sh) : undefined,
-    shotsOnTarget: row.SoT ? safeParseInt(row.SoT) : undefined,
-    shotAccuracy: row["SoT%"] ? safeParseFloat(row["SoT%"]) : undefined,
-    shotsOn90: row["Sh/90"] ? safeParseFloat(row["Sh/90"]) : undefined,
+    shots: findColumnValue(['Sh', 'shots', 'Shots']) ? safeParseInt(findColumnValue(['Sh', 'shots', 'Shots'])!) : undefined,
+    shotsOnTarget: findColumnValue(['SoT']) ? safeParseInt(findColumnValue(['SoT'])!) : undefined,
+    shotAccuracy: findColumnValue(['SoT%']) ? safeParseFloat(findColumnValue(['SoT%'])!) : undefined,
+    shotsOn90: findColumnValue(['Sh/90']) ? safeParseFloat(findColumnValue(['Sh/90'])!) : undefined,
     
     // Passing stats
-    passAttempts: row.Att ? safeParseInt(row.Att) : undefined,
-    passCompleted: row.Cmp ? safeParseInt(row.Cmp) : undefined,
-    passAccuracy: row["Cmp%"] ? safeParseFloat(row["Cmp%"]) : undefined,
-    totalPassDistance: row.TotDist ? safeParseInt(row.TotDist) : undefined,
-    progressivePassDistance: row.PrgDist ? safeParseInt(row.PrgDist) : undefined,
+    passAttempts: findColumnValue(['Att']) ? safeParseInt(findColumnValue(['Att'])!) : undefined,
+    passCompleted: findColumnValue(['Cmp']) ? safeParseInt(findColumnValue(['Cmp'])!) : undefined,
+    passAccuracy: findColumnValue(['Cmp%']) ? safeParseFloat(findColumnValue(['Cmp%'])!) : undefined,
+    totalPassDistance: findColumnValue(['TotDist']) ? safeParseInt(findColumnValue(['TotDist'])!) : undefined,
+    progressivePassDistance: findColumnValue(['PrgDist']) ? safeParseInt(findColumnValue(['PrgDist'])!) : undefined,
     
     // Defensive stats
-    tackles: row.Tkl ? safeParseInt(row.Tkl) : undefined,
-    tacklesWon: row.TklW ? safeParseInt(row.TklW) : undefined,
-    interceptions: row.Int ? safeParseInt(row.Int) : undefined,
-    blocks: row.Blocks_stats_defense ? safeParseInt(row.Blocks_stats_defense) : undefined,
-    clearances: row.Clr ? safeParseInt(row.Clr) : undefined,
+    tackles: findColumnValue(['Tkl']) ? safeParseInt(findColumnValue(['Tkl'])!) : undefined,
+    tacklesWon: findColumnValue(['TklW']) ? safeParseInt(findColumnValue(['TklW'])!) : undefined,
+    interceptions: findColumnValue(['Int']) ? safeParseInt(findColumnValue(['Int'])!) : undefined,
+    blocks: findColumnValue(['Blocks', 'Blocks_stats_defense']) ? safeParseInt(findColumnValue(['Blocks', 'Blocks_stats_defense'])!) : undefined,
+    clearances: findColumnValue(['Clr']) ? safeParseInt(findColumnValue(['Clr'])!) : undefined,
     
     // Goalkeeper stats
-    saves: row.Saves ? safeParseInt(row.Saves) : undefined,
-    savePercentage: row["Save%"] ? safeParseFloat(row["Save%"]) : undefined,
-    cleanSheets: row.CS ? safeParseInt(row.CS) : undefined,
-    goalsAgainst: row.GA ? safeParseInt(row.GA) : undefined,
+    saves: findColumnValue(['Saves']) ? safeParseInt(findColumnValue(['Saves'])!) : undefined,
+    savePercentage: findColumnValue(['Save%']) ? safeParseFloat(findColumnValue(['Save%'])!) : undefined,
+    cleanSheets: findColumnValue(['CS']) ? safeParseInt(findColumnValue(['CS'])!) : undefined,
+    goalsAgainst: findColumnValue(['GA']) ? safeParseInt(findColumnValue(['GA'])!) : undefined,
     
     // Photo URL from CSV
     imageUrl: photoUrl?.trim() || undefined,
-    
-    // NO MORE ESTIMATED/RANDOM DATA - everything else stays undefined
   };
+
+  // Add all other CSV columns as dynamic properties
+  Object.keys(row).forEach(key => {
+    if (!['Player', 'Squad', 'Comp', 'Pos', 'Age'].includes(key) && row[key]) {
+      // Convert the key to a safe property name
+      const safeKey = key.replace(/[^a-zA-Z0-9_]/g, '_');
+      if (!player.hasOwnProperty(safeKey)) {
+        const value = row[key];
+        // Try to parse as number if it looks like one
+        const numValue = parseFloat(value);
+        player[safeKey] = !isNaN(numValue) && value.trim() !== '' ? numValue : value;
+      }
+    }
+  });
+
+  return player;
 }
 
 export function PlayerDataProvider({ children }: { children: ReactNode }) {

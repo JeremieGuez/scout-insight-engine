@@ -65,6 +65,9 @@ export interface Player {
   height?: number;
   preferredFoot?: 'Left' | 'Right' | 'Both';
   imageUrl?: string;
+  
+  // Dynamic properties for additional CSV columns
+  [key: string]: any;
 }
 
 const clubs = {
