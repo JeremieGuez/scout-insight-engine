@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Player } from "@/data/players";
 import { Trophy, TrendingUp, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getPlayerImageSrc, createImageErrorHandler } from "@/lib/images";
 
 interface CompactPlayerCardProps {
   player: Player & { similarity?: number };
@@ -49,20 +50,31 @@ export const CompactPlayerCard = ({ player, rank }: CompactPlayerCardProps) => {
         </div>
 
         {/* Player Info */}
-        <div className="mb-3">
-          <button
-            onClick={() => navigate(`/player/${player.id}`)}
-            className="text-left hover:text-primary transition-colors w-full"
-          >
-            <h3 className="font-bold text-foreground hover:text-primary transition-colors truncate mb-1">
-              {player.name}
-            </h3>
-          </button>
-          <div className="flex items-center gap-2">
-            <Badge className={`${getPositionColor(player.position)} text-xs`}>
-              {player.position}
-            </Badge>
-            <span className="text-xs text-muted-foreground">{player.age} ans</span>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-12 h-12 rounded-full overflow-hidden border border-border/50 flex-shrink-0">
+            <img
+              src={getPlayerImageSrc(player)}
+              alt={`${player.name} profile`}
+              className="w-full h-full object-cover"
+              onError={createImageErrorHandler(player)}
+              loading="lazy"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <button
+              onClick={() => navigate(`/player/${player.id}`)}
+              className="text-left hover:text-primary transition-colors w-full"
+            >
+              <h3 className="font-bold text-foreground hover:text-primary transition-colors truncate mb-1">
+                {player.name}
+              </h3>
+            </button>
+            <div className="flex items-center gap-2">
+              <Badge className={`${getPositionColor(player.position)} text-xs`}>
+                {player.position}
+              </Badge>
+              <span className="text-xs text-muted-foreground">{player.age} ans</span>
+            </div>
           </div>
         </div>
 

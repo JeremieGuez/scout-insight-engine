@@ -91,6 +91,9 @@ function csvRowToPlayer(row: FBrefPlayerRow, index: number): Player {
   // Check for market value column (various possible names) - use index access for dynamic properties
   const marketValueFromCSV = (row as any)["Market Value"] || (row as any)["market value"] || (row as any)["Market_Value"] || (row as any)["market_value"];
   
+  // Check for photo URL column (various possible names)
+  const photoUrl = (row as any)["photo_url"] || (row as any)["Photo URL"] || (row as any)["photo"] || (row as any)["image_url"] || (row as any)["image"] || (row as any)["imageUrl"];
+  
   return {
     id: `csv-player-${index}`,
     name: row.Player.trim(),
@@ -152,6 +155,9 @@ function csvRowToPlayer(row: FBrefPlayerRow, index: number): Player {
     savePercentage: row["Save%"] ? safeParseFloat(row["Save%"]) : undefined,
     cleanSheets: row.CS ? safeParseInt(row.CS) : undefined,
     goalsAgainst: row.GA ? safeParseInt(row.GA) : undefined,
+    
+    // Photo URL from CSV
+    imageUrl: photoUrl?.trim() || undefined,
     
     // NO MORE ESTIMATED/RANDOM DATA - everything else stays undefined
   };

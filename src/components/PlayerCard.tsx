@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Player } from "@/data/players";
 import { Trophy, Target, Zap, TrendingUp, Users, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getPlayerImageSrc, createImageErrorHandler } from "@/lib/images";
 
 interface PlayerCardProps {
   player: Player & { similarity?: number };
@@ -28,6 +29,19 @@ export const PlayerCard = ({ player, showSimilarity = false }: PlayerCardProps) 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-card via-card to-card/95">
       <CardContent className="p-6">
+        {/* Player Photo */}
+        <div className="flex justify-center mb-4">
+          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-primary/20">
+            <img
+              src={getPlayerImageSrc(player)}
+              alt={`${player.name} profile`}
+              className="w-full h-full object-cover"
+              onError={createImageErrorHandler(player)}
+              loading="lazy"
+            />
+          </div>
+        </div>
+
         {/* Header with name and position */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">

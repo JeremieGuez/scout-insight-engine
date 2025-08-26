@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Player } from "@/data/players";
 import { Trophy, Target, Star, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getPlayerImageSrc, createImageErrorHandler } from "@/lib/images";
 
 interface SelectedPlayerCardProps {
   player: Player;
@@ -24,10 +25,14 @@ export const SelectedPlayerCard = ({ player }: SelectedPlayerCardProps) => {
         <div className="flex items-start gap-6">
           {/* Player Avatar */}
           <div className="flex-shrink-0">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
-              <span className="text-xl font-bold text-primary-foreground">
-                {player.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-              </span>
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/20">
+              <img
+                src={getPlayerImageSrc(player)}
+                alt={`${player.name} profile`}
+                className="w-full h-full object-cover"
+                onError={createImageErrorHandler(player)}
+                loading="lazy"
+              />
             </div>
           </div>
 

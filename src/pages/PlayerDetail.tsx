@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { PlayerCard } from '@/components/PlayerCard';
 import { findSimilarPlayers } from '@/data/players';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getPlayerImageSrc, createImageErrorHandler } from '@/lib/images';
 import { 
   ArrowLeft, 
   Target, 
@@ -85,17 +86,17 @@ const PlayerDetail = () => {
           <Card className="overflow-hidden border-0 shadow-xl bg-white">
             <div className="relative bg-gradient-to-br from-slate-50 via-white to-slate-100 p-6">
               <div className="flex items-start gap-6">
-                {/* Player Avatar */}
-                <div className="relative">
-                  <Avatar className="h-24 w-24 border-4 border-primary/20 shadow-lg">
-                    <AvatarImage
-                      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=0ea5e9&color=fff&size=256&bold=true`} 
-                      alt={player.name} 
-                    />
-                    <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
-                      {player.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
+                 {/* Player Avatar */}
+                 <div className="relative">
+                   <div className="h-24 w-24 rounded-full overflow-hidden border-4 border-primary/20 shadow-lg">
+                     <img
+                       src={getPlayerImageSrc(player)}
+                       alt={`${player.name} profile`}
+                       className="w-full h-full object-cover"
+                       onError={createImageErrorHandler(player)}
+                       loading="lazy"
+                     />
+                   </div>
                   <div className="absolute -bottom-2 -right-2">
                     <Badge className={`${getPositionColor(player.position)} text-xs font-bold shadow-md border-2 border-white`}>
                       {player.position}
