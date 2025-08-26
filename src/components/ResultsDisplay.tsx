@@ -1,22 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { CompactPlayerCard } from './CompactPlayerCard';
-import { SelectedPlayerCard } from './SelectedPlayerCard';
-import { SearchInterface } from './SearchInterface';
-import { QuickFilters } from './QuickFilters';
-import { ResultsFilters } from './ResultsFilters';
-import { Player, findSimilarPlayers, rankSimilarPlayers } from '@/data/players';
+import { Player, rankSimilarPlayers } from '@/data/players';
 import { usePlayerData } from '@/hooks/usePlayerData';
-import { Download, Search, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { getPlayerImageSrc, createImageErrorHandler } from '@/lib/images';
+import { Target, ChevronDown } from 'lucide-react';
 
 interface ResultsDisplayProps {
   selectedPlayer: Player;
@@ -25,221 +16,425 @@ interface ResultsDisplayProps {
 
 export const ResultsDisplay = ({ selectedPlayer, onPlayerSelect }: ResultsDisplayProps) => {
   const { players } = usePlayerData();
-  const similarPlayers = useMemo(() => 
-    rankSimilarPlayers(selectedPlayer, players), 
-    [selectedPlayer, players]
-  );
-  const [filteredPlayers, setFilteredPlayers] = useState<(Player & { similarity: number })[]>(similarPlayers);
-  const [showExpandedFilters, setShowExpandedFilters] = useState(false);
+  const [filteredPlayers, setFilteredPlayers] = useState<Array<Player & { similarity: number }>>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState<Set<string>>(new Set());
+  const [sortBy, setSortBy] = useState('similarity');
+  const [positionFilter, setPositionFilter] = useState('all');
+  const [marketValueFilter, setMarketValueFilter] = useState('all');
+  const [ageFilter, setAgeFilter] = useState('all');
+  const [leagueFilter, setLeagueFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState(selectedPlayer.name);
 
-  // Update filtered players when similar players change
+  const itemsPerPage = 8;
+
+  const similarPlayers = useMemo(() => {
+    console.log('🔍 Calculating similar players for:', selectedPlayer.name);
+    const similar = rankSimilarPlayers(selectedPlayer, players).slice(0, 50);
+    console.log('✅ Found', similar.length, 'similar players');
+    return similar;
+  }, [selectedPlayer, players]);
+
   useEffect(() => {
-    setFilteredPlayers(similarPlayers);
-    setCurrentPage(1);
-  }, [similarPlayers]);
+    let filtered = [...similarPlayers];
 
-  // Calculate pagination
+    // Apply filters
+    if (positionFilter !== 'all') {
+      const positions = positionFilter === 'forward' ? ['ST', 'CF', 'LW', 'RW'] :
+                      positionFilter === 'midfielder' ? ['CDM', 'CM', 'CAM', 'LM', 'RM'] :
+                      positionFilter === 'defender' ? ['CB', 'LB', 'RB'] :
+                      positionFilter === 'goalkeeper' ? ['GK'] : [];
+      filtered = filtered.filter(p => positions.includes(p.position));
+    }
+
+    if (marketValueFilter !== 'all') {
+      filtered = filtered.filter(p => {
+        const value = p.marketValue || 0;
+        switch (marketValueFilter) {
+          case '100plus': return value >= 100;
+          case '50-100': return value >= 50 && value < 100;
+          case '20-50': return value >= 20 && value < 50;
+          case '5-20': return value >= 5 && value < 20;
+          case 'under5': return value < 5;
+          default: return true;
+        }
+      });
+    }
+
+    if (ageFilter !== 'all') {
+      filtered = filtered.filter(p => {
+        const age = p.age || 0;
+        switch (ageFilter) {
+          case '18-21': return age >= 18 && age <= 21;
+          case '22-25': return age >= 22 && age <= 25;
+          case '26-30': return age >= 26 && age <= 30;
+          case '30plus': return age > 30;
+          default: return true;
+        }
+      });
+    }
+
+    if (leagueFilter !== 'all') {
+      filtered = filtered.filter(p => p.league.toLowerCase().includes(leagueFilter.toLowerCase()));
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'marketValue': return (b.marketValue || 0) - (a.marketValue || 0);
+        case 'age': return (a.age || 0) - (b.age || 0);
+        case 'goals': return (b.goals || 0) - (a.goals || 0);
+        default: return b.similarity - a.similarity;
+      }
+    });
+
+    setFilteredPlayers(filtered);
+    setCurrentPage(1);
+  }, [similarPlayers, positionFilter, marketValueFilter, ageFilter, leagueFilter, sortBy]);
+
   const totalPages = Math.ceil(filteredPlayers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentPlayers = filteredPlayers.slice(startIndex, endIndex);
 
-  const exportToCsv = () => {
-    const headers = [
-      'Name', 'Age', 'Club', 'Position', 'League', 'Similarity %',
-      'Goals', 'Assists', 'Pass Accuracy', 'Tempo', 'Pressing', 
-      'Market Value (€M)', 'Media Sentiment', 'Followers'
-    ];
-    
-    const csvData = [
-      headers,
-      ...filteredPlayers.map(player => [
-        player.name,
-        player.age.toString(),
-        player.club,
-        player.position,
-        player.league,
-        `${(player.similarity * 100).toFixed(1)}%`,
-        player.goals.toString(),
-        player.assists.toString(),
-        `${player.passAccuracy}%`,
-        `${player.tempo}/10`,
-        `${player.pressingIntensity}/10`,
-        player.marketValue.toString(),
-        player.sentimentScore.toString(),
-        player.followersCount.toString()
-      ])
-    ];
-
-    const csvContent = csvData.map(row => 
-      row.map(field => `"${field}"`).join(',')
-    ).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `scout360_similar_to_${selectedPlayer.name.replace(/\s+/g, '_').toLowerCase()}.csv`;
-    link.click();
+  const getPositionColor = (position: string) => {
+    if (position === 'GK') return 'bg-amber-500 text-white';
+    if (['CB', 'LB', 'RB'].includes(position)) return 'bg-blue-500 text-white';
+    if (['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(position)) return 'bg-emerald-500 text-white';
+    return 'bg-rose-500 text-white';
   };
 
-  const getOverallScore = (player: Player & { similarity: number }) => {
-    const performanceScore = (player.goals + player.assists) / 2;
-    const styleScore = (player.tempo + player.pressingIntensity + player.aggressivenessIndex) / 3;
-    const mediaScore = Math.max(0, player.sentimentScore) / 10;
-    
-    return ((performanceScore + styleScore + mediaScore) / 3 * player.similarity * 10).toFixed(1);
+  const togglePlayerSelection = (playerId: string) => {
+    setSelectedPlayerIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(playerId)) {
+        newSet.delete(playerId);
+      } else {
+        newSet.add(playerId);
+      }
+      return newSet;
+    });
   };
 
   return (
-    <div className="space-y-6">
-      {/* Search Interface */}
-      <div className="mb-6">
-        <SearchInterface onPlayerSelect={onPlayerSelect} selectedPlayer={selectedPlayer} />
-      </div>
-
-      {/* Selected Player Card */}
-      <SelectedPlayerCard player={selectedPlayer} />
-      
-      {/* Results Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
-            <Search className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              Joueurs similaires
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {filteredPlayers.length} joueurs trouvés • Page {currentPage} sur {totalPages}
-            </p>
-          </div>
-        </div>
-        
-        <Button
-          onClick={exportToCsv}
-          variant="outline"
-          size="sm"
-          disabled={filteredPlayers.length === 0}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Export ({filteredPlayers.length})
-        </Button>
-      </div>
-
-      {/* Quick Filters */}
-      <QuickFilters 
-        players={similarPlayers} 
-        onFilterChange={(filtered) => {
-          setFilteredPlayers(filtered);
-          setCurrentPage(1);
-        }}
-        onExpandFilters={() => setShowExpandedFilters(!showExpandedFilters)}
-      />
-
-      {/* Expanded Filters */}
-      {showExpandedFilters && (
-        <ResultsFilters 
-          players={similarPlayers} 
-          onFilterChange={(filtered) => {
-            setFilteredPlayers(filtered);
-            setCurrentPage(1);
-          }}
-        />
-      )}
-
-      {/* Results Summary */}
-      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <Users className="h-4 w-4" />
-          <span>{filteredPlayers.length} de {similarPlayers.length} joueurs</span>
-        </div>
-        {filteredPlayers.length > 0 && (
-          <>
-            <span>•</span>
-            <span>Meilleur match: {(filteredPlayers[0].similarity * 100).toFixed(0)}%</span>
-            <span>•</span>
-            <span>{new Set(filteredPlayers.map(p => p.league)).size} ligues</span>
-          </>
-        )}
-      </div>
-
-      {/* Similar Players Grid */}
-      <div className="space-y-4">
-        {currentPlayers.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {currentPlayers.map((player, index) => (
-                <CompactPlayerCard 
-                  key={player.id} 
-                  player={player} 
-                  rank={startIndex + index + 1}
-                />
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-6">
-                <Pagination>
-                  <PaginationContent>
-                    {currentPage > 1 && (
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          onClick={() => setCurrentPage(currentPage - 1)}
-                          className="cursor-pointer"
-                        />
-                      </PaginationItem>
-                    )}
-                    
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNum = totalPages - 4 + i;
-                      } else {
-                        pageNum = currentPage - 2 + i;
-                      }
-                      
-                      return (
-                        <PaginationItem key={pageNum}>
-                          <PaginationLink 
-                            onClick={() => setCurrentPage(pageNum)}
-                            isActive={currentPage === pageNum}
-                            className="cursor-pointer"
-                          >
-                            {pageNum}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
-                    
-                    {currentPage < totalPages && (
-                      <PaginationItem>
-                        <PaginationNext 
-                          onClick={() => setCurrentPage(currentPage + 1)}
-                          className="cursor-pointer"
-                        />
-                      </PaginationItem>
-                    )}
-                  </PaginationContent>
-                </Pagination>
+    <div className="min-h-screen bg-muted/30">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 border-b border-border shadow-sm">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center gap-6">
+            {/* Logo */}
+            <div className="flex items-center gap-3 cursor-pointer">
+              <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center">
+                <Target className="h-5 w-5 text-primary-foreground" />
               </div>
-            )}
-          </>
-        ) : (
-          <Card className="p-8 text-center">
-            <div className="text-muted-foreground">
-              <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">Aucun joueur ne correspond aux filtres</p>
-              <p className="text-sm">Essayez d'ajuster vos critères de filtrage.</p>
+              <span className="text-xl font-light italic text-primary">chameleon</span>
             </div>
-          </Card>
+            
+            {/* Search Bar */}
+            <div className="flex-1 max-w-md">
+              <Input
+                type="text"
+                placeholder="Search for a player..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="rounded-full border-2 focus:border-primary"
+              />
+            </div>
+            
+            {/* Compare Button */}
+            <Button 
+              variant={selectedPlayerIds.size > 0 ? "default" : "secondary"}
+              className="rounded-full px-6"
+            >
+              Compare ({selectedPlayerIds.size})
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Header Section with Selected Player */}
+      <div className="bg-card border-b border-border shadow-sm">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center gap-6">
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary/20 shadow-lg">
+              <img
+                src={getPlayerImageSrc(selectedPlayer)}
+                alt={`${selectedPlayer.name} profile`}
+                className="w-full h-full object-cover"
+                onError={createImageErrorHandler(selectedPlayer)}
+              />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                Players similar to {selectedPlayer.name}
+              </h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge className={`${getPositionColor(selectedPlayer.position)} font-medium`}>
+                  {selectedPlayer.position}
+                </Badge>
+                {selectedPlayer.age && (
+                  <span className="text-muted-foreground">{selectedPlayer.age} years old</span>
+                )}
+                <span className="text-muted-foreground">•</span>
+                <span className="text-muted-foreground">{selectedPlayer.club}</span>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-muted-foreground">{selectedPlayer.league}</span>
+                <span className="text-muted-foreground">•</span>
+                <span className="text-muted-foreground">{selectedPlayer.country}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters Section */}
+      <div className="bg-card border-b border-border shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex gap-6 items-center flex-wrap">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">Position</label>
+              <Select value={positionFilter} onValueChange={setPositionFilter}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Positions</SelectItem>
+                  <SelectItem value="forward">Forward</SelectItem>
+                  <SelectItem value="midfielder">Midfielder</SelectItem>
+                  <SelectItem value="defender">Defender</SelectItem>
+                  <SelectItem value="goalkeeper">Goalkeeper</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">Market Value</label>
+              <Select value={marketValueFilter} onValueChange={setMarketValueFilter}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Values</SelectItem>
+                  <SelectItem value="100plus">€100M+</SelectItem>
+                  <SelectItem value="50-100">€50-100M</SelectItem>
+                  <SelectItem value="20-50">€20-50M</SelectItem>
+                  <SelectItem value="5-20">€5-20M</SelectItem>
+                  <SelectItem value="under5">Under €5M</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">Age</label>
+              <Select value={ageFilter} onValueChange={setAgeFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Ages</SelectItem>
+                  <SelectItem value="18-21">18-21</SelectItem>
+                  <SelectItem value="22-25">22-25</SelectItem>
+                  <SelectItem value="26-30">26-30</SelectItem>
+                  <SelectItem value="30plus">30+</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-foreground">League</label>
+              <Select value={leagueFilter} onValueChange={setLeagueFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Leagues</SelectItem>
+                  <SelectItem value="premier">Premier League</SelectItem>
+                  <SelectItem value="liga">La Liga</SelectItem>
+                  <SelectItem value="bundesliga">Bundesliga</SelectItem>
+                  <SelectItem value="serie">Serie A</SelectItem>
+                  <SelectItem value="ligue">Ligue 1</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <Button 
+            variant="link" 
+            className="text-primary mt-3 p-0 h-auto font-medium underline"
+          >
+            + More filters (Minutes, Contract, Advanced metrics)
+          </Button>
+        </div>
+      </div>
+
+      {/* Results Header */}
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-muted-foreground">
+            Showing {currentPlayers.length} similar players • Page {currentPage} of {totalPages}
+          </p>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="similarity">Sort by Similarity</SelectItem>
+              <SelectItem value="marketValue">Sort by Market Value</SelectItem>
+              <SelectItem value="age">Sort by Age</SelectItem>
+              <SelectItem value="goals">Sort by Goals</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Main Content - Player Cards Grid */}
+      <div className="container mx-auto px-4 pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
+          {currentPlayers.map((player, index) => (
+            <Card key={player.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 border hover:border-primary/30 bg-card">
+              <CardContent className="p-6">
+                {/* Card Header */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-15 h-15 rounded-full overflow-hidden border border-border/50">
+                    <img
+                      src={getPlayerImageSrc(player)}
+                      alt={`${player.name} profile`}
+                      className="w-full h-full object-cover"
+                      onError={createImageErrorHandler(player)}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <button
+                      onClick={() => onPlayerSelect(player)}
+                      className="text-left hover:text-primary transition-colors"
+                    >
+                      <h3 className="text-xl font-bold text-foreground hover:text-primary transition-colors">
+                        {player.name}
+                      </h3>
+                    </button>
+                    <p className="text-sm text-muted-foreground">
+                      {player.position} • {player.age} • {player.club} • {player.league}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-3 py-2 rounded-lg font-bold text-lg shadow-lg">
+                      {Math.round(player.similarity * 100)}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* Market Value Highlight */}
+                <div className="bg-muted/50 rounded-lg p-3 mb-4">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-primary">
+                      {player.marketValue ? `€${player.marketValue}M` : 'N/A'}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                      Market Value
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="text-center p-3 bg-card border border-border rounded-lg">
+                    <div className="font-bold text-foreground text-lg">
+                      {player.minutes?.toLocaleString() || 'N/A'}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">Minutes</div>
+                  </div>
+                  <div className="text-center p-3 bg-card border border-border rounded-lg">
+                    <div className="font-bold text-foreground text-lg">
+                      {player.nineties?.toFixed(0) || 'N/A'}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">Matches</div>
+                  </div>
+                  <div className="text-center p-3 bg-card border border-border rounded-lg">
+                    <div className="font-bold text-foreground text-lg">
+                      {player.goals || 'N/A'}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">Goals</div>
+                  </div>
+                  <div className="text-center p-3 bg-card border border-border rounded-lg">
+                    <div className="font-bold text-foreground text-lg">
+                      {player.assists || 'N/A'}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">Assists</div>
+                  </div>
+                  <div className="text-center p-3 bg-card border border-border rounded-lg">
+                    <div className="font-bold text-foreground text-lg">
+                      {player.xG?.toFixed(1) || 'N/A'}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">xG</div>
+                  </div>
+                  <div className="text-center p-3 bg-card border border-border rounded-lg">
+                    <div className="font-bold text-foreground text-lg">
+                      {player.passAccuracy ? `${player.passAccuracy}%` : 'N/A'}
+                    </div>
+                    <div className="text-xs text-muted-foreground font-medium">Passing</div>
+                  </div>
+                </div>
+
+                {/* Card Footer */}
+                <div className="flex justify-between items-center pt-4 border-t border-border">
+                  <Button variant="link" className="text-primary p-0 h-auto font-medium underline">
+                    + more stats
+                  </Button>
+                  <button
+                    onClick={() => togglePlayerSelection(player.id)}
+                    className={`w-5 h-5 border-2 border-primary rounded cursor-pointer transition-all duration-300 flex items-center justify-center ${
+                      selectedPlayerIds.has(player.id) 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'hover:bg-primary/10'
+                    }`}
+                  >
+                    {selectedPlayerIds.has(player.id) && (
+                      <span className="text-xs font-bold">✓</span>
+                    )}
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-8">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = i + 1;
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className="min-w-10"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </div>
