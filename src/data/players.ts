@@ -193,121 +193,132 @@ export function searchPlayers(query: string, playerList: Player[] = players): Pl
   ).slice(0, 10); // Limit autocomplete results
 }
 
-export function calculateSimilarity(player1: Player, player2: Player): number {
-  // Position must match exactly
-  if (player1.position !== player2.position) return 0;
-  
-  let totalSimilarity = 0;
-  let totalWeight = 0;
-  
-  // Helper function to calculate normalized similarity between two values
-  const calcSimilarity = (val1: number | undefined, val2: number | undefined, maxDiff: number): number | null => {
-    if (val1 == null || val2 == null) return null;
-    const diff = Math.abs(val1 - val2);
-    return Math.max(0, 1 - diff / maxDiff);
-  };
-  
-  // Helper function to add similarity with weight
-  const addSimilarity = (similarity: number | null, weight: number) => {
-    if (similarity !== null) {
-      totalSimilarity += similarity * weight;
-      totalWeight += weight;
-    }
-  };
-  
-  // 1. Age similarity (3% weight) - reduced because we have better metrics
-  addSimilarity(calcSimilarity(player1.age, player2.age, 8), 0.03);
-  
-  // 2. Playing time similarity (7% weight) - indicates similar usage
-  addSimilarity(calcSimilarity(player1.minutes, player2.minutes, 3000), 0.04);
-  addSimilarity(calcSimilarity(player1.nineties, player2.nineties, 30), 0.03);
-  
-  // Position-specific analysis
-  const isGoalkeeper = player1.position === 'GK';
-  const isDefender = ['CB', 'LB', 'RB', 'WB'].includes(player1.position);
-  const isMidfielder = ['CDM', 'CM', 'CAM', 'LM', 'RM'].includes(player1.position);
-  const isAttacker = ['LW', 'RW', 'ST', 'CF'].includes(player1.position);
-  
-  if (isGoalkeeper) {
-    // ============ GOALKEEPER ANALYSIS (90% weight) ============
-    
-    // Shot stopping (40%)
-    addSimilarity(calcSimilarity(player1.saves, player2.saves, 100), 0.25);
-    addSimilarity(calcSimilarity(player1.savePercentage, player2.savePercentage, 30), 0.15);
-    
-    // Clean sheets and goals against (30%)
-    addSimilarity(calcSimilarity(player1.cleanSheets, player2.cleanSheets, 20), 0.15);
-    addSimilarity(calcSimilarity(player1.goalsAgainst, player2.goalsAgainst, 50), 0.15);
-    
-    // Distribution (20%)
-    addSimilarity(calcSimilarity(player1.passAccuracy, player2.passAccuracy, 25), 0.10);
-    addSimilarity(calcSimilarity(player1.passCompleted, player2.passCompleted, 200), 0.10);
-    
+// Helper functions for feature extraction and similarity calculation
+function isGoalkeeper(position: string): boolean {
+  return position?.toUpperCase().startsWith('GK') || false;
+}
+
+function buildFeatureSet(players: Player[], forGk: boolean): string[] {
+  // Map Player properties to feature names, prioritizing available stats
+  if (forGk) {
+    const gkFeatures = [
+      'savePercentage', 'saves', 'cleanSheets', 'goalsAgainst', 
+      'passAccuracy', 'passCompleted'
+    ];
+    return gkFeatures.filter(feat => {
+      return players.some(p => p[feat as keyof Player] != null);
+    });
   } else {
-    // ============ OUTFIELD PLAYER ANALYSIS ============
+    const outfieldFeatures = [
+      'shotsOn90', 'shotsOnTarget90', 'xG', 'npxG', 'shotAccuracy', 'goals', 'assists',
+      'passAccuracy', 'prgP', 'prgC', 'prgR', 'totalPassDistance', 'progressivePassDistance',
+      'touches', 'carries', 'miscontrols', 'dispossessed',
+      'pressures', 'pressureSuccesses', 'tackles', 'interceptions', 'blocks', 'clearances',
+      'aerialsWon', 'aerialWinPercentage', 'errors', 'yellowCards', 'redCards', 'offsides'
+    ];
+    return outfieldFeatures.filter(feat => {
+      return players.some(p => p[feat as keyof Player] != null);
+    });
+  }
+}
+
+function standardizeFeatures(players: Player[], features: string[]): { 
+  zScores: number[][], 
+  means: { [key: string]: number }, 
+  stds: { [key: string]: number } 
+} {
+  const means: { [key: string]: number } = {};
+  const stds: { [key: string]: number } = {};
+  
+  // Calculate means and standard deviations for each feature
+  features.forEach(feat => {
+    const values = players
+      .map(p => p[feat as keyof Player] as number)
+      .filter(v => v != null && !isNaN(v));
     
-    // 3. Basic offensive output (15% weight)
-    addSimilarity(calcSimilarity(player1.goals, player2.goals, 25), 0.08);
-    addSimilarity(calcSimilarity(player1.assists, player2.assists, 15), 0.07);
-    
-    // 4. Expected performance (15% weight) - more predictive than raw stats
-    addSimilarity(calcSimilarity(player1.xG, player2.xG, 20), 0.08);
-    addSimilarity(calcSimilarity(player1.xAG, player2.xAG, 15), 0.07);
-    
-    // 5. Progressive actions (15% weight) - key for modern football
-    addSimilarity(calcSimilarity(player1.prgC, player2.prgC, 80), 0.05);
-    addSimilarity(calcSimilarity(player1.prgP, player2.prgP, 100), 0.05);
-    addSimilarity(calcSimilarity(player1.prgR, player2.prgR, 60), 0.05);
-    
-    if (isAttacker) {
-      // ============ ATTACKER SPECIFIC (45% weight) ============
-      
-      // Shooting style (25%)
-      addSimilarity(calcSimilarity(player1.shots, player2.shots, 150), 0.08);
-      addSimilarity(calcSimilarity(player1.shotsOnTarget, player2.shotsOnTarget, 60), 0.07);
-      addSimilarity(calcSimilarity(player1.shotAccuracy, player2.shotAccuracy, 40), 0.05);
-      addSimilarity(calcSimilarity(player1.shotsOn90, player2.shotsOn90, 4), 0.05);
-      
-      // Chance creation (20%)
-      addSimilarity(calcSimilarity(player1.prgC, player2.prgC, 60), 0.10);
-      addSimilarity(calcSimilarity(player1.prgR, player2.prgR, 40), 0.10);
-      
-    } else if (isMidfielder) {
-      // ============ MIDFIELDER SPECIFIC (45% weight) ============
-      
-      // Passing style (30%)
-      addSimilarity(calcSimilarity(player1.passAccuracy, player2.passAccuracy, 25), 0.10);
-      addSimilarity(calcSimilarity(player1.passCompleted, player2.passCompleted, 500), 0.08);
-      addSimilarity(calcSimilarity(player1.totalPassDistance, player2.totalPassDistance, 3000), 0.07);
-      addSimilarity(calcSimilarity(player1.progressivePassDistance, player2.progressivePassDistance, 1000), 0.05);
-      
-      // Tempo and creativity (15%)
-      addSimilarity(calcSimilarity(player1.prgP, player2.prgP, 80), 0.10);
-      addSimilarity(calcSimilarity(player1.prgC, player2.prgC, 40), 0.05);
-      
-    } else if (isDefender) {
-      // ============ DEFENDER SPECIFIC (45% weight) ============
-      
-      // Defensive actions (30%)
-      addSimilarity(calcSimilarity(player1.tackles, player2.tackles, 80), 0.10);
-      addSimilarity(calcSimilarity(player1.tacklesWon, player2.tacklesWon, 60), 0.08);
-      addSimilarity(calcSimilarity(player1.interceptions, player2.interceptions, 60), 0.07);
-      addSimilarity(calcSimilarity(player1.clearances, player2.clearances, 100), 0.05);
-      
-      // Ball playing ability (15%) - modern defenders
-      addSimilarity(calcSimilarity(player1.passAccuracy, player2.passAccuracy, 20), 0.08);
-      addSimilarity(calcSimilarity(player1.prgP, player2.prgP, 50), 0.07);
+    if (values.length > 0) {
+      means[feat] = values.reduce((sum, v) => sum + v, 0) / values.length;
+      const variance = values.reduce((sum, v) => sum + Math.pow(v - means[feat], 2), 0) / values.length;
+      stds[feat] = Math.sqrt(variance) || 1; // Avoid division by zero
+    } else {
+      means[feat] = 0;
+      stds[feat] = 1;
     }
-    
-    // ============ UNIVERSAL OUTFIELD METRICS (10% weight) ============
-    
-    // Involvement and consistency (5%)
-    addSimilarity(calcSimilarity(player1.passAttempts, player2.passAttempts, 800), 0.03);
-    addSimilarity(calcSimilarity(player1.blocks, player2.blocks, 30), 0.02);
+  });
+  
+  // Calculate z-scores for all players
+  const zScores = players.map(player => {
+    return features.map(feat => {
+      const value = player[feat as keyof Player] as number;
+      if (value == null || isNaN(value)) return 0;
+      return (value - means[feat]) / stds[feat];
+    });
+  });
+  
+  return { zScores, means, stds };
+}
+
+function cosineSimilarity(vecA: number[], vecB: number[]): number {
+  if (vecA.length !== vecB.length) return 0;
+  
+  const dotProduct = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+  const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0)) + 1e-9;
+  const normB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0)) + 1e-9;
+  
+  return dotProduct / (normA * normB);
+}
+
+export function calculateSimilarity(player1: Player, player2: Player, allPlayers: Player[] = []): number {
+  // Use a broader position grouping instead of exact match
+  const player1IsGk = isGoalkeeper(player1.position);
+  const player2IsGk = isGoalkeeper(player2.position);
+  
+  // Only compare players of the same role (GK vs outfield)
+  if (player1IsGk !== player2IsGk) return 0;
+  
+  // Get all players of the same role for standardization
+  const sameRolePlayers = allPlayers.length > 0 
+    ? allPlayers.filter(p => isGoalkeeper(p.position) === player1IsGk)
+    : [player1, player2];
+  
+  // Build feature set
+  const features = buildFeatureSet(sameRolePlayers, player1IsGk);
+  if (features.length === 0) return 0;
+  
+  // Standardize features
+  const { zScores, means, stds } = standardizeFeatures(sameRolePlayers, features);
+  
+  // Find indices of our target players in the same role players array
+  const player1Index = sameRolePlayers.findIndex(p => p.id === player1.id);
+  const player2Index = sameRolePlayers.findIndex(p => p.id === player2.id);
+  
+  // If players not found in the array, calculate their z-scores directly
+  let player1Vector: number[];
+  let player2Vector: number[];
+  
+  if (player1Index >= 0) {
+    player1Vector = zScores[player1Index];
+  } else {
+    player1Vector = features.map(feat => {
+      const value = player1[feat as keyof Player] as number;
+      return value != null && !isNaN(value) ? (value - means[feat]) / stds[feat] : 0;
+    });
   }
   
-  // Return normalized similarity (0-1)
-  return totalWeight > 0 ? Math.min(1, totalSimilarity / totalWeight) : 0;
+  if (player2Index >= 0) {
+    player2Vector = zScores[player2Index];
+  } else {
+    player2Vector = features.map(feat => {
+      const value = player2[feat as keyof Player] as number;
+      return value != null && !isNaN(value) ? (value - means[feat]) / stds[feat] : 0;
+    });
+  }
+  
+  // Calculate cosine similarity
+  const similarity = cosineSimilarity(player1Vector, player2Vector);
+  
+  // Normalize to 0-1 range and ensure non-negative
+  return Math.max(0, Math.min(1, (similarity + 1) / 2));
 }
 
 export function rankSimilarPlayers(targetPlayer: Player, playerList: Player[] = players): Array<Player & { similarity: number }> {
@@ -315,7 +326,7 @@ export function rankSimilarPlayers(targetPlayer: Player, playerList: Player[] = 
     .filter(player => player.id !== targetPlayer.id)
     .map(player => ({
       ...player,
-      similarity: calculateSimilarity(targetPlayer, player)
+      similarity: calculateSimilarity(targetPlayer, player, playerList)
     }))
     .sort((a, b) => b.similarity - a.similarity);
 }

@@ -6,6 +6,7 @@ import { DataSummary } from '@/components/DataSummary';
 import { Player } from '@/data/players';
 import { Card, CardContent } from '@/components/ui/card';
 import { Target, Users, TrendingUp, BarChart3 } from 'lucide-react';
+import chameleonLogo from '@/assets/chameleon-logo.jpg';
 import { usePlayerData } from '@/hooks/usePlayerData';
 
 const Index = () => {
@@ -23,12 +24,12 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-gradient-to-br from-primary to-primary/80 rounded-lg flex items-center justify-center">
-                <Target className="h-6 w-6 text-white" />
+              <div className="h-10 w-10 rounded-lg overflow-hidden">
+                <img src={chameleonLogo} alt="Chameleon" className="w-full h-full object-cover" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-primary">Scout360</h1>
-                <p className="text-sm text-muted-foreground">Professional Football Scouting Platform</p>
+                <h1 className="text-2xl font-bold text-primary">Chameleon</h1>
+                <p className="text-sm text-muted-foreground">Advanced Football Player Analytics</p>
               </div>
             </div>
             <div className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
@@ -58,11 +59,11 @@ const Index = () => {
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-                  Find Your Next Star Player
+                  Adaptez-vous à vos besoins de recrutement
                 </h2>
                 <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                  Discover similar players using our advanced AI recommendation engine. 
-                  Search through {totalPlayers}+ professional players across Europe's top leagues.
+                  Chameleon utilise des modèles statistiques avancés pour identifier des joueurs similaires. 
+                  Analysez {totalPlayers}+ joueurs professionnels avec précision scientifique.
                 </p>
               </div>
               
@@ -88,9 +89,9 @@ const Index = () => {
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                       <Target className="h-6 w-6 text-primary" />
                     </div>
-                    <h3 className="font-semibold text-lg mb-2">Smart Matching</h3>
+                    <h3 className="font-semibold text-lg mb-2">Analyse Vectorielle</h3>
                     <p className="text-muted-foreground text-sm">
-                      Our AI analyzes 25+ attributes to find players with similar playing styles and characteristics.
+                      Algorithmes de similarité cosinus sur des features standardisées pour une précision maximale.
                     </p>
                   </CardContent>
                 </Card>
@@ -100,9 +101,9 @@ const Index = () => {
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                       <BarChart3 className="h-6 w-6 text-primary" />
                     </div>
-                    <h3 className="font-semibold text-lg mb-2">Advanced Analytics</h3>
+                    <h3 className="font-semibold text-lg mb-2">Modélisation Statistique</h3>
                     <p className="text-muted-foreground text-sm">
-                      Detailed statistical analysis including performance metrics, style of play, and market valuation.
+                      Normalisation z-score et sélection dynamique de features selon le poste du joueur.
                     </p>
                   </CardContent>
                 </Card>
@@ -112,9 +113,9 @@ const Index = () => {
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                       <Users className="h-6 w-6 text-primary" />
                     </div>
-                    <h3 className="font-semibold text-lg mb-2">Export Ready</h3>
+                    <h3 className="font-semibold text-lg mb-2">Données Adaptatives</h3>
                     <p className="text-muted-foreground text-sm">
-                      Export search results to CSV for further analysis or sharing with your scouting team.
+                      Import CSV personnalisé avec detection automatique des colonnes et ajustement du modèle.
                     </p>
                   </CardContent>
                 </Card>
@@ -160,11 +161,11 @@ const Index = () => {
       <footer className="bg-muted/30 border-t border-primary/10 py-8 mt-16">
         <div className="container mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Target className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-primary">Scout360</span>
+            <img src={chameleonLogo} alt="Chameleon" className="h-6 w-6 rounded" />
+            <span className="font-semibold text-primary">Chameleon</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Professional Football Scouting Platform • AI-Powered Player Analysis
+            Advanced Football Player Analytics • Statistical Modeling & ML
           </p>
         </div>
       </footer>
