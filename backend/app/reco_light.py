@@ -188,6 +188,20 @@ class RecoEngine:
         if not mask.any():
             return res
         idx = int(np.nonzero(mask.values)[0][0])
+        hero_row = self.df.iloc[idx]
+        res["player"] = {
+            "name": str(hero_row[self.name_col]),
+            "pos": str(hero_row[self.pos_col]) if self.pos_col else "",
+            "age": int(hero_row["Age"]) if "Age" in self.df.columns and pd.notna(hero_row["Age"]) else None,
+            "club": str(hero_row["Squad"]) if "Squad" in self.df.columns and pd.notna(hero_row["Squad"]) else "",
+            "league": str(hero_row["Comp"]) if "Comp" in self.df.columns and pd.notna(hero_row["Comp"]) else "",
+            "marketValue": str(hero_row[self._pick_col("market_value")]).strip() if self._pick_col("market_value") else None,
+            "Min": int(hero_row["Min"]) if "Min" in self.df.columns and pd.notna(hero_row["Min"]) else None,
+            "MP": int(hero_row["MP"]) if "MP" in self.df.columns and pd.notna(hero_row["MP"]) else None,
+            "Gls": int(hero_row["Gls"]) if "Gls" in self.df.columns and pd.notna(hero_row["Gls"]) else None,
+            "Ast": int(hero_row["Ast"]) if "Ast" in self.df.columns and pd.notna(hero_row["Ast"]) else None,
+            "xG": float(hero_row["xG"]) if "xG" in self.df.columns and pd.notna(hero_row["xG"]) else None,
+        }
         v = self.features[idx]
         denom_v = np.linalg.norm(v)
         if denom_v == 0:

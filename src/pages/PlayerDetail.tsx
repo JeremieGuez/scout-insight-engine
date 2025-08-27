@@ -1,102 +1,85 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import {
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
-  ResponsiveContainer,
-} from "recharts";
-import PlayerPhoto from "@/components/ui/PlayerPhoto";
-import PlayerCard from "@/components/PlayerCard";
+import { useParams } from "react-router-dom";
 import { similar } from "@/lib/api";
 import { formatMarketValue } from "@/lib/market";
-import type { Player } from "@/types";
+import { mapPosition } from "@/lib/positionMap";
+import stats_config from "@/config/stats_config";
 
 export default function PlayerDetail() {
-  const { name } = useParams<{ name: string }>();
-  const navigate = useNavigate();
-
-  const [results, setResults] = useState<Player[]>([]);
+  const { name } = useParams();
+  const [player, setPlayer] = useState<any | null>(null);
+  const [similars, setSimilars] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!name) return;
-    setLoading(true);
-    similar(name, 5)
-      .then((d) => setResults(d.results || []))
-      .finally(() => setLoading(false));
+    async function fetchData() {
+      if (!name) return;
+      setLoading(true);
+      try {
+        const response = await similar(name, 5);
+        if (response?.results?.length > 0) {
+          setPlayer({ name, ...response.results[0] });
+          setSimilars(response.results.slice(1));
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
   }, [name]);
 
-  if (!name) return <div>No player selected</div>;
+  if (loading) return <p className="p-6">Loading player…</p>;
+  if (!player) return <p className="p-6">Player not found</p>;
+
+  // Déterminer les stats primaires du poste
+  const mappedPos = mapPosition(player.position);
+  const statsToShow = stats_config[mappedPos]?.PRIMARY || [];
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-6">
-      {/* Header joueur */}
-      <div className="flex items-center gap-4 mb-8">
-        <PlayerPhoto name={name} size={64} />
-        <div>
-          <h1 className="text-2xl font-bold">{name}</h1>
-          <p className="text-gray-500">{results[0]?.position || "—"}</p>
-          <p className="text-sm mt-1">
-            Market Value: {formatMarketValue(results[0]?.marketValue)}
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero */}
+      <header className="bg-white shadow p-6 mb-6">
+        <h1 className="text-3xl font-bold mb-2">{player.name}</h1>
+        <p className="text-gray-600">
+          {player.position} • {player.club || player.league || "Unknown"}
+        </p>
+        <p className="mt-2">
+          Market Value:{" "}
+          <span className="font-semibold text-emerald-600">
+            {formatMarketValue(player.marketValue)}
+          </span>
+        </p>
+        {/* Stats primaires */}
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
+          {statsToShow.map((stat: string) => (
+            <div key={stat} className="bg-gray-100 p-3 rounded text-center">
+              <p className="font-bold">{player[stat] ?? "—"}</p>
+              <p className="text-xs text-gray-600">{stat}</p>
+            </div>
+          ))}
         </div>
-        <button
-          onClick={() => navigate(-1)}
-          className="ml-auto text-sm text-[#00C896] underline"
-        >
-          ← Back
-        </button>
-      </div>
-
-      {/* Radar chart placeholder */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
-        <h2 className="font-semibold mb-4">Performance Overview</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <RadarChart
-            outerRadius="80%"
-            data={[
-              { stat: "Passing", value: 80 },
-              { stat: "Shooting", value: 65 },
-              { stat: "Defense", value: 70 },
-              { stat: "Pace", value: 85 },
-              { stat: "Dribbling", value: 75 },
-            ]}
-          >
-            <PolarGrid />
-            <PolarAngleAxis dataKey="stat" />
-            <PolarRadiusAxis />
-            <Radar
-              dataKey="value"
-              stroke="#00C896"
-              fill="#00C896"
-              fillOpacity={0.6}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
+      </header>
 
       {/* Joueurs similaires */}
-      <div>
-        <h2 className="font-semibold mb-4">Similar Players</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {loading ? (
-            <div>Loading…</div>
-          ) : (
-            results.map((p, i) => (
-              <PlayerCard
-                key={i}
-                name={p.name}
-                position={p.position}
-                similarity={p.score}
-                marketValue={formatMarketValue(p.marketValue)}
-              />
-            ))
-          )}
+      <main className="px-6">
+        <h2 className="text-xl font-semibold mb-4">Similar Players</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {similars.map((p) => (
+            <div key={p.name} className="bg-white p-4 rounded-lg shadow">
+              <h3 className="font-bold">{p.name}</h3>
+              <p className="text-sm text-gray-600">
+                {p.position} • {p.club || p.league || "Unknown"}
+              </p>
+              <p className="mt-2 text-sm">
+                Market Value:{" "}
+                <span className="font-semibold">
+                  {formatMarketValue(p.marketValue)}
+                </span>
+              </p>
+            </div>
+          ))}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
