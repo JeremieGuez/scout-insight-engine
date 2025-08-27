@@ -1,84 +1,42 @@
-// Normalise les données venant de ton API (format différent du CSV)
-function normalizePlayerData(player: any): ResultItem {
-  console.log('Données brutes reçues:', player); // Debug
-
-  return {
-    name: player.name || player.Player || "",
-    pos: player.position || player.pos || player.Pos || "",
-    age: Number(player.age || player.Age) || undefined,
-    club: player.club || player.Squad || "",
-    league: player.league || player.Comp || "",
-    marketValue: player.marketValue || player.market_value || null,
-    similarity: player.score || player.similarity,
-    // Stats de base - noms exacts du CSV
-    Min: Number(player.Min) || 0,
-    MP: Number(player.MP) || 0,
-    Gls: Number(player.Gls) || 0,
-    Ast: Number(player.Ast) || 0,
-    xG: Number(player.xG) || 0,
-    '90s': Number(player['90s']) || 0,
-    // Stats gardien - noms exacts du CSV
-    CS: Number(player.CS) || 0,
-    'Save%': Number(player['Save%']) || 0,
-    'PSxG+/-': Number(player['PSxG+/-']) || 0,
-    SoTA: Number(player.SoTA) || 0,
-    // Stats défense - noms exacts du CSV
-    Tkl: Number(player.Tkl) || 0,
-    Int: Number(player.Int) || 0,
-    Blocks: Number(player.Blocks || player.Blocks_stats_defense) || 0,
-    Clr: Number(player.Clr) || 0,
-    // Stats creation/passing - noms exacts du CSV
-    KP: Number(player.KP) || 0,
-    xAG: Number(player.xAG || player.xAG_stats_passing) || 0,
-    SCA: Number(player.SCA) || 0,
-    PrgP: Number(player.PrgP || player.PrgP_stats_passing) || 0,
-    'Cmp%': Number(player['Cmp%']) || 0,
-    // Stats attaque - noms exacts du CSV
-    SoT: Number(player.SoT) || 0,
-    'SoT%': Number(player['SoT%']) || 0,
-    'Sh/90': Number(player['Sh/90']) || 0,
-    'G/Sh': Number(player['G/Sh']) || 0,
-    npxG: Number(player.npxG) || 0
-  };
-}import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { similar } from "@/lib/api";
 import { photoFor } from "@/lib/photos";
 
-// Configuration des stats par position - Basée sur votre config scout
+// Configuration des stats par position - TOUTES LES POSITIONS CSV
 const STATS_CONFIG = {
   GLOBAL: {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG', '90s']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
   },
   GK: {
-    PRIMARY: ['Min', 'MP', 'CS', 'Save%', 'PSxG+/-', '90s']
+    PRIMARY: ['Min', 'MP', 'CS', 'Save%', 'PSxG+/-']
   },
   DF: {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'Tkl', 'Int']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
   },
   'DF,MF': {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'PrgP', 'KP']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
   },
   MF: {
-    PRIMARY: ['Min', 'MP', 'KP', 'xAG', 'SCA', 'PrgP']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
   },
   'MF,DF': {
-    PRIMARY: ['Min', 'MP', 'Tkl', 'Int', 'PrgP', 'KP']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
   },
   'MF,FW': {
-    PRIMARY: ['Min', 'MP', 'xG', 'xAG', 'SCA', 'KP']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
   },
   FW: {
-    PRIMARY: ['Min', 'MP', 'xG', 'SoT', 'Gls', '90s']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
   },
   'FW,MF': {
-    PRIMARY: ['Min', 'MP', 'xG', 'KP', 'SCA', 'Gls']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
   },
   'FW,DF': {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'Tkl', 'xG']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
   },
   'DF,FW': {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'Tkl', 'xG']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
   }
 };
 
@@ -104,35 +62,15 @@ type ResultItem = {
   league?: string;
   marketValue?: string | null;
   similarity?: number;
-  // Stats de base
+  // Stats
   Min?: number;
   MP?: number;
   Gls?: number;
   Ast?: number;
   xG?: number;
-  '90s'?: number;
-  // Stats gardien
   CS?: number;
   'Save%'?: number;
   'PSxG+/-'?: number;
-  SoTA?: number;
-  // Stats défense
-  Tkl?: number;
-  Int?: number;
-  Blocks?: number;
-  Clr?: number;
-  // Stats creation/passing
-  KP?: number;
-  xAG?: number;
-  SCA?: number;
-  PrgP?: number;
-  'Cmp%'?: number;
-  // Stats attaque
-  SoT?: number;
-  'SoT%'?: number;
-  'Sh/90'?: number;
-  'G/Sh'?: number;
-  npxG?: number;
 };
 
 type ApiResponse = {
@@ -186,7 +124,32 @@ function StatCard({ label, value, unit = "" }: {
   );
 }
 
+// Normalise les données venant de ton API (format différent du CSV)
+function normalizePlayerData(player: any): ResultItem {
+  console.log('Données brutes reçues:', player); // Debug
 
+  return {
+    name: player.name || player.Player || "",
+    // CORRECTION : API retourne "position" pas "Pos"
+    pos: player.position || player.pos || player.Pos || "",
+    age: Number(player.age || player.Age) || undefined,
+    club: player.club || player.Squad || "",
+    league: player.league || player.Comp || "",
+    // CORRECTION : API retourne "marketValue" 
+    marketValue: player.marketValue || player.market_value || player['market_value'] || null,
+    // CORRECTION : API retourne "score" pas "similarity"
+    similarity: player.score || player.similarity,
+    // Stats basées sur vos colonnes CSV exactes
+    Min: Number(player.Min) || undefined,
+    MP: Number(player.MP) || undefined,
+    Gls: Number(player.Gls) || undefined,
+    Ast: Number(player.Ast) || undefined,
+    xG: Number(player.xG) || undefined,
+    CS: Number(player.CS) || undefined,
+    'Save%': Number(player['Save%']) || undefined,
+    'PSxG+/-': Number(player['PSxG+/-']) || undefined
+  };
+}
 
 function getStatsForPosition(player: ResultItem, position?: string) {
   const pos = position || player.pos;
@@ -209,19 +172,9 @@ function getStatLabel(key: string) {
     'Gls': 'Goals',
     'Ast': 'Assists',
     'xG': 'xG',
-    '90s': '90s',
     'CS': 'Clean Sheets',
     'Save%': 'Save %',
-    'PSxG+/-': 'PSxG +/-',
-    'SoTA': 'SoTA',
-    'Tkl': 'Tackles',
-    'Int': 'Interceptions',
-    'KP': 'Key Passes',
-    'xAG': 'xAG',
-    'SCA': 'SCA',
-    'PrgP': 'Progressive Passes',
-    'SoT': 'SoT',
-    'Cmp%': 'Pass %'
+    'PSxG+/-': 'PSxG +/-'
   };
   return labels[key as keyof typeof labels] || key;
 }
@@ -1024,7 +977,7 @@ export default function Results() {
                       {playerStats.slice(0, 3).map((stat) => (
                         <div key={stat.key}>
                           <div className="text-lg font-bold text-gray-900">
-                            {`${stat.value || 0}${stat.unit}`}
+                            {stat.value !== undefined && stat.value !== null && stat.value !== 0 ? `${stat.value}${stat.unit}` : '—'}
                           </div>
                           <div className="text-xs text-gray-500">{stat.label}</div>
                         </div>
@@ -1036,7 +989,7 @@ export default function Results() {
                       {playerStats.slice(3, 6).map((stat) => (
                         <div key={stat.key}>
                           <div className="text-lg font-bold text-gray-900">
-                            {`${stat.value || 0}${stat.unit}`}
+                            {stat.value !== undefined && stat.value !== null && stat.value !== 0 ? `${stat.value}${stat.unit}` : '—'}
                           </div>
                           <div className="text-xs text-gray-500">{stat.label}</div>
                         </div>
