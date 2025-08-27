@@ -201,6 +201,105 @@ function numericMarketM(input?: string | null): number | null {
   return isFinite(n) ? n : null;
 }
 
+// Configuration des filtres avancés par section - organisée par logique
+const ADVANCED_FILTERS = {
+  general: {
+    title: "General",
+    stats: [
+      { key: "MP", label: "Matches", tooltip: "Matches played" },
+      { key: "Min", label: "Minutes", tooltip: "Minutes played" },
+      { key: "90s", label: "90s", tooltip: "Minutes played divided by 90" }
+    ]
+  },
+  offensive: {
+    title: "Offensive",
+    stats: [
+      { key: "Gls", label: "Goals", tooltip: "Goals scored" },
+      { key: "Ast", label: "Assists", tooltip: "Assists provided (pass directly leading to a goal)" },
+      { key: "xG", label: "xG", tooltip: "Expected Goals (includes penalties)" }
+    ]
+  },
+  passing: {
+    title: "Passing",
+    stats: [
+      { key: "Cmp%", label: "Pass%", tooltip: "Pass completion percentage", isPercentage: true },
+      { key: "PrgP", label: "Progressive Passes", tooltip: "Completed passes moving ball ≥10 yards towards goal" },
+      { key: "KP", label: "Key Passes", tooltip: "Passes directly leading to a shot" }
+    ]
+  },
+  shooting: {
+    title: "Shooting",
+    stats: [
+      { key: "Sh", label: "Shots", tooltip: "Total shots attempted" },
+      { key: "SoT", label: "SoT", tooltip: "Shots on Target" },
+      { key: "G/Sh", label: "G/Sh", tooltip: "Goals per Shot" }
+    ]
+  },
+  defensive: {
+    title: "Defensive", 
+    stats: [
+      { key: "Tkl", label: "Tackles", tooltip: "Number of players tackled" },
+      { key: "Int", label: "Interceptions", tooltip: "Interceptions made" },
+      { key: "Blocks", label: "Blocks", tooltip: "Number of times blocking a shot" }
+    ]
+  },
+  possession: {
+    title: "Possession",
+    stats: [
+      { key: "Touches", label: "Touches", tooltip: "Number of times a player touched the ball" },
+      { key: "Succ%", label: "Dribble%", tooltip: "Percentage of dribbles completed successfully", isPercentage: true },
+      { key: "PrgC", label: "Progressive Carries", tooltip: "Carries moving the ball ≥10 yards towards goal" }
+    ]
+  },
+  creation: {
+    title: "Creation",
+    stats: [
+      { key: "SCA", label: "SCA", tooltip: "Shot-Creating Actions" },
+      { key: "GCA", label: "GCA", tooltip: "Goal-Creating Actions" },
+      { key: "SCA90", label: "SCA/90", tooltip: "Shot-Creating Actions per 90 minutes" }
+    ]
+  },
+  discipline: {
+    title: "Discipline",
+    stats: [
+      { key: "CrdY", label: "Yellow Cards", tooltip: "Yellow cards received" },
+      { key: "CrdR", label: "Red Cards", tooltip: "Red cards received" },
+      { key: "Fls", label: "Fouls", tooltip: "Fouls committed" }
+    ]
+  },
+  goalkeeper: {
+    title: "Goalkeeper",
+    stats: [
+      { key: "Saves", label: "Saves", tooltip: "Number of saves made" },
+      { key: "Save%", label: "Save%", tooltip: "Percentage of shots saved", isPercentage: true },
+      { key: "CS", label: "Clean Sheets", tooltip: "Number of matches with no goals conceded" }
+    ]
+  }
+};
+
+// Fonction pour obtenir les valeurs par défaut d'une stat
+const getStatDefaults = (key: string, isPercentage = false) => {
+  const percentageDefaults = { min: 0, max: 100 };
+  const normalDefaults = { min: 0, max: 50 };
+  const specialDefaults: Record<string, { min: number; max: number }> = {
+    'Min': { min: 0, max: 3000 },
+    'MP': { min: 0, max: 40 },
+    'Starts': { min: 0, max: 40 },
+    '90s': { min: 0, max: 40 },
+    'Touches': { min: 0, max: 120 },
+    'Carries': { min: 0, max: 80 },
+    'Gls': { min: 0, max: 30 },
+    'Ast': { min: 0, max: 20 },
+    'xG': { min: 0, max: 25 },
+    'Sh': { min: 0, max: 150 },
+    'Saves': { min: 0, max: 150 },
+    'GA': { min: 0, max: 80 }
+  };
+
+  if (isPercentage) return percentageDefaults;
+  return specialDefaults[key] || normalDefaults;
+};
+
 export default function Results() {
   const [sp] = useSearchParams();
   const query = sp.get("query")?.trim() ?? "";
@@ -216,6 +315,8 @@ export default function Results() {
   const [leagueFilter, setLeagueFilter] = useState<string[]>([]);
   const [ageRange, setAgeRange] = useState<[number, number]>([AGE_MIN, AGE_MAX]);
   const [valueRange, setValueRange] = useState<[number, number]>([VALUE_MIN_M, VALUE_MAX_M]);
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<Record<string, [number, number]>>({});
 
   // dropdown states
   const [posDropdownOpen, setPosDropdownOpen] = useState(false);
@@ -340,33 +441,50 @@ export default function Results() {
     return result;
   }, [items]);
 
-  // Logique de filtrage
+  const heroStats = hero ? getStatsForPosition(hero, hero.pos) : [];
+
+  // Fonction pour vérifier si un joueur correspond aux filtres avancés
+  const matchesAdvancedFilters = (player: ResultItem) => {
+    for (const [statKey, [min, max]] of Object.entries(advancedFilters)) {
+      const value = player[statKey as keyof ResultItem] as number;
+      if (value != null && (value < min || value > max)) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Logique de filtrage avec filtres avancés
   const filtered = useMemo(() => {
     return items.filter((it) => {
-      // position - exact match
+      // Filtres existants
       if (posFilter.length > 0) {
         if (!posFilter.includes(it.pos || "")) return false;
       }
-      // league - exact match sans préfixes
       if (leagueFilter.length > 0) {
         const cleanLeague = (it.league || "").replace(/^[a-z]{2,3}\s+/i, '');
         const cleanFilters = leagueFilter.map(l => l.replace(/^[a-z]{2,3}\s+/i, ''));
         if (!cleanFilters.includes(cleanLeague)) return false;
       }
-      // age range
       if (it.age != null) {
         if (it.age < ageRange[0] || it.age > ageRange[1]) return false;
       }
-      // value range
       const mv = numericMarketM(it.marketValue);
       if (mv != null) {
         if (mv < valueRange[0] || mv > valueRange[1]) return false;
       }
+      
+      // Filtres avancés
+      if (!matchesAdvancedFilters(it)) return false;
+      
       return true;
     });
-  }, [items, posFilter, leagueFilter, ageRange, valueRange]);
+  }, [items, posFilter, leagueFilter, ageRange, valueRange, advancedFilters]);
 
-  const heroStats = hero ? getStatsForPosition(hero, hero.pos) : [];
+  // Fonction pour réinitialiser les filtres avancés
+  const resetAdvancedFilters = () => {
+    setAdvancedFilters({});
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -615,9 +733,177 @@ export default function Results() {
                 />
                 <span className="text-gray-500 text-sm">m€</span>
               </div>
+              
+              {/* More filters link positionné sous Value */}
+              <div className="mt-3 flex">
+                <div className="w-32"></div> {/* Espaceur pour aligner avec le 2e input */}
+                <div className="w-24 flex justify-start">
+                  <button
+                    onClick={() => setMoreFiltersOpen(true)}
+                    className="text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                  >
+                    More filters +
+                    {Object.keys(advancedFilters).length > 0 && (
+                      <span className="ml-1 bg-gradient-to-r from-teal-500 to-cyan-400 text-white px-1.5 py-0.5 rounded-full text-xs">
+                        {Object.keys(advancedFilters).length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Clear filters si des filtres avancés sont actifs */}
+          {Object.keys(advancedFilters).length > 0 && (
+            <div className="mt-4 flex justify-start">
+              <button
+                onClick={resetAdvancedFilters}
+                className="text-xs text-gray-400 hover:text-gray-600 underline"
+              >
+                Clear advanced filters
+              </button>
+            </div>
+          )}
         </section>
+
+        {/* POPUP MORE FILTERS */}
+        {moreFiltersOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900">Advanced Filters</h2>
+                <button
+                  onClick={() => setMoreFiltersOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="grid grid-cols-3 gap-8">
+                  {Object.entries(ADVANCED_FILTERS).map(([sectionKey, section]) => {
+                    // Masquer la section GK si aucun GK sélectionné
+                    if (sectionKey === 'goalkeeper' && !posFilter.includes('GK')) {
+                      return null;
+                    }
+
+                    return (
+                      <div key={sectionKey} className="space-y-4">
+                        <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                          {section.title}
+                        </h3>
+                        
+                        <div className="space-y-4">
+                          {section.stats.map(stat => {
+                            const defaults = getStatDefaults(stat.key, stat.isPercentage);
+                            const currentFilter = advancedFilters[stat.key] || [defaults.min, defaults.max];
+                            
+                            return (
+                              <div key={stat.key} className="space-y-2">
+                                <div className="text-sm font-medium text-gray-700 relative group">
+                                  {stat.label}
+                                  {/* Tooltip */}
+                                  <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-800 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap z-10">
+                                    {stat.tooltip}
+                                  </div>
+                                </div>
+                                
+                                <div className="flex gap-2 items-center">
+                                  <input
+                                    type="number"
+                                    min={defaults.min}
+                                    max={defaults.max}
+                                    step={stat.isPercentage ? 1 : 0.1}
+                                    value={currentFilter[0]}
+                                    onChange={(e) => {
+                                      const min = Number(e.target.value);
+                                      if (min >= defaults.min && min <= currentFilter[1]) {
+                                        setAdvancedFilters(prev => ({
+                                          ...prev,
+                                          [stat.key]: [min, currentFilter[1]]
+                                        }));
+                                      }
+                                    }}
+                                    className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center"
+                                  />
+                                  <span className="text-gray-500 text-sm">-</span>
+                                  <input
+                                    type="number"
+                                    min={defaults.min}
+                                    max={defaults.max}
+                                    step={stat.isPercentage ? 1 : 0.1}
+                                    value={currentFilter[1]}
+                                    onChange={(e) => {
+                                      const max = Number(e.target.value);
+                                      if (max <= defaults.max && max >= currentFilter[0]) {
+                                        setAdvancedFilters(prev => ({
+                                          ...prev,
+                                          [stat.key]: [currentFilter[0], max]
+                                        }));
+                                      }
+                                    }}
+                                    className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center"
+                                  />
+                                  {stat.isPercentage && <span className="text-gray-500 text-sm">%</span>}
+                                  
+                                  {/* Bouton pour supprimer ce filtre */}
+                                  {advancedFilters[stat.key] && (
+                                    <button
+                                      onClick={() => {
+                                        setAdvancedFilters(prev => {
+                                          const newFilters = { ...prev };
+                                          delete newFilters[stat.key];
+                                          return newFilters;
+                                        });
+                                      }}
+                                      className="text-red-500 hover:text-red-700 text-xs"
+                                      title="Remove filter"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="border-t border-gray-200 p-6 flex items-center justify-between">
+                <button
+                  onClick={resetAdvancedFilters}
+                  className="text-sm text-gray-500 hover:text-gray-700 underline"
+                >
+                  Clear all advanced filters
+                </button>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setMoreFiltersOpen(false)}
+                    className="px-6 py-3 bg-white border border-gray-300 rounded-2xl text-gray-700 hover:bg-gray-50 transition-colors font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => setMoreFiltersOpen(false)}
+                    className="px-6 py-3 bg-gradient-to-r from-teal-500 to-cyan-400 text-white font-semibold rounded-2xl transition-all duration-200 hover:shadow-lg hover:shadow-teal-500/25"
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* RESULTS avec stats */}
         <section>
