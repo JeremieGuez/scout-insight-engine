@@ -297,56 +297,56 @@ export default function Results() {
 
       <main className="mx-auto max-w-6xl px-4 py-6">
       {/* HERO - Player Info avec stats */}
-        <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
-          <div className="text-center">
-            {/* Photo centrée */}
-            <img
-              src={photoFor(hero?.name || "")}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "/players/default.jpg";
-              }}
-              alt={hero?.name ?? "player"}
-              className="h-24 w-24 rounded-full object-cover mx-auto mb-4"
-            />
-            
-            {/* Nom du joueur */}
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {hero?.name ?? query}
-            </h1>
-            
-            {/* Infos: age + poste + club + ligue */}
-            <div className="flex items-center justify-center gap-4 text-sm text-gray-600 mb-6">
-              {hero?.age && <span className="font-medium">{hero.age} years</span>}
-              {hero?.pos && <span className="font-medium">{mapPosition(hero.pos)}</span>}
-              {hero?.club && <span>{hero.club}</span>}
-              {hero?.league && <span>{hero.league.replace(/^[a-z]{2,3}\s+/i, '')}</span>}
-            </div>
+      <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
+        <div className="text-center">
+          {/* Photo centrée */}
+          <img
+            src={photoFor(hero?.name || "")}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/players/default.jpg";
+            }}
+            alt={hero?.name ?? "player"}
+            className="h-24 w-24 rounded-full object-cover mx-auto mb-4"
+          />
+          
+          {/* Nom du joueur */}
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {hero?.name ?? query}
+          </h1>
+          
+          {/* Infos: age + poste + club + ligue */}
+          <div className="flex items-center justify-center gap-4 text-sm text-gray-600 mb-6">
+            {hero?.age && <span className="font-medium">{hero.age} years</span>}
+            {hero?.pos && <span className="font-medium">{mapPosition(hero.pos)}</span>}
+            {hero?.club && <span>{hero.club}</span>}
+            {hero?.league && <span>{hero.league.replace(/^[a-z]{2,3}\s+/i, '')}</span>}
+          </div>
 
-            {/* Market Value + Stats centrés */}
-            <div className="flex items-center justify-center gap-8">
-              {/* Market Value */}
-              {hero?.marketValue && (
-                <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl p-4">
-                  <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                    {formatMarketValue(hero.marketValue).replace('Û', '€')}
-                  </div>
+          {/* Market Value + Stats centrés */}
+          <div className="flex items-center justify-center gap-8">
+            {/* Market Value */}
+            {hero?.marketValue && (
+              <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl p-4">
+                <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                  {formatMarketValue(hero.marketValue).replace('Û', '€')}
                 </div>
-              )}
-              
-              {/* Stats primaires */}
-              <div className="grid grid-cols-5 gap-4">
-                {heroStats.map((stat) => (
-                  <StatCard
-                    key={stat.key}
-                    label={stat.label}
-                    value={stat.value || 0}
-                    unit={stat.unit}
-                  />
-                ))}
               </div>
+            )}
+            
+            {/* Stats primaires */}
+            <div className="grid grid-cols-5 gap-4">
+              {heroStats.map((stat) => (
+                <StatCard
+                  key={stat.key}
+                  label={stat.label}
+                  value={stat.value || 0}
+                  unit={stat.unit}
+                />
+              ))}
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
         {/* FILTERS - Avec dropdowns */}
         <section className="mb-6 rounded-2xl bg-white p-6 shadow-sm">
