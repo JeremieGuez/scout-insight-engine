@@ -13,6 +13,7 @@ from .reco_light import RecoEngine  # noqa
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("chameleon")
+logging.getLogger("uvicorn.access").disabled = True
 
 # <- C'EST ÇA QUE UVICORN CHERCHE
 app = FastAPI(title="Chameleon API", version="0.1.0")

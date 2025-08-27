@@ -21,7 +21,8 @@ start: install
 ## Backend FastAPI (reload)
 backend:
 	@echo "▶ Backend → http://$(BACK_HOST):$(BACK_PORT)"
-	@$(UVICORN) backend.app.main:app --host $(BACK_HOST) --port $(BACK_PORT) --reload
+	@$(UVICORN) backend.app.main:app --host $(BACK_HOST) --port $(BACK_PORT) --reload 
+	
 
 ## Frontend Vite (port configurable)
 frontend:
