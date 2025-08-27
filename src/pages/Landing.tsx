@@ -191,7 +191,7 @@ export default function Landing() {
             { flag: "🇫🇷", country: "France", leagues: "Ligue 1, Ligue 2" },
             { flag: "🇪🇸", country: "Spain", leagues: "La Liga, Segunda División" },
             { flag: "🇮🇹", country: "Italy", leagues: "Serie A, Serie B" },
-            { flag: "🇩🇪", country: "Germany", leagues: "Bundesliga, Bundesliga 2" },
+            { flag: "🇩🇪", country: "Germany", leagues: "Bundesliga, Bundesliga" },
             { flag: "🇵🇹", country: "Portugal", leagues: "Primeira Liga, Liga Portugal 2" },
           ].map((x, i) => (
             <div key={i} className="text-center">
