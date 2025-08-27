@@ -1,42 +1,84 @@
-import { useEffect, useMemo, useState } from "react";
+// Normalise les données venant de ton API (format différent du CSV)
+function normalizePlayerData(player: any): ResultItem {
+  console.log('Données brutes reçues:', player); // Debug
+
+  return {
+    name: player.name || player.Player || "",
+    pos: player.position || player.pos || player.Pos || "",
+    age: Number(player.age || player.Age) || undefined,
+    club: player.club || player.Squad || "",
+    league: player.league || player.Comp || "",
+    marketValue: player.marketValue || player.market_value || null,
+    similarity: player.score || player.similarity,
+    // Stats de base - noms exacts du CSV
+    Min: Number(player.Min) || 0,
+    MP: Number(player.MP) || 0,
+    Gls: Number(player.Gls) || 0,
+    Ast: Number(player.Ast) || 0,
+    xG: Number(player.xG) || 0,
+    '90s': Number(player['90s']) || 0,
+    // Stats gardien - noms exacts du CSV
+    CS: Number(player.CS) || 0,
+    'Save%': Number(player['Save%']) || 0,
+    'PSxG+/-': Number(player['PSxG+/-']) || 0,
+    SoTA: Number(player.SoTA) || 0,
+    // Stats défense - noms exacts du CSV
+    Tkl: Number(player.Tkl) || 0,
+    Int: Number(player.Int) || 0,
+    Blocks: Number(player.Blocks || player.Blocks_stats_defense) || 0,
+    Clr: Number(player.Clr) || 0,
+    // Stats creation/passing - noms exacts du CSV
+    KP: Number(player.KP) || 0,
+    xAG: Number(player.xAG || player.xAG_stats_passing) || 0,
+    SCA: Number(player.SCA) || 0,
+    PrgP: Number(player.PrgP || player.PrgP_stats_passing) || 0,
+    'Cmp%': Number(player['Cmp%']) || 0,
+    // Stats attaque - noms exacts du CSV
+    SoT: Number(player.SoT) || 0,
+    'SoT%': Number(player['SoT%']) || 0,
+    'Sh/90': Number(player['Sh/90']) || 0,
+    'G/Sh': Number(player['G/Sh']) || 0,
+    npxG: Number(player.npxG) || 0
+  };
+}import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { similar } from "@/lib/api";
 import { photoFor } from "@/lib/photos";
 
-// Configuration des stats par position - TOUTES LES POSITIONS CSV
+// Configuration des stats par position - Basée sur votre config scout
 const STATS_CONFIG = {
   GLOBAL: {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG', '90s']
   },
   GK: {
-    PRIMARY: ['Min', 'MP', 'CS', 'Save%', 'PSxG+/-']
+    PRIMARY: ['Min', 'MP', 'CS', 'Save%', 'PSxG+/-', '90s']
   },
   DF: {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'Tkl', 'Int']
   },
   'DF,MF': {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'PrgP', 'KP']
   },
   MF: {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
+    PRIMARY: ['Min', 'MP', 'KP', 'xAG', 'SCA', 'PrgP']
   },
   'MF,DF': {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
+    PRIMARY: ['Min', 'MP', 'Tkl', 'Int', 'PrgP', 'KP']
   },
   'MF,FW': {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
+    PRIMARY: ['Min', 'MP', 'xG', 'xAG', 'SCA', 'KP']
   },
   FW: {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
+    PRIMARY: ['Min', 'MP', 'xG', 'SoT', 'Gls', '90s']
   },
   'FW,MF': {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
+    PRIMARY: ['Min', 'MP', 'xG', 'KP', 'SCA', 'Gls']
   },
   'FW,DF': {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'Tkl', 'xG']
   },
   'DF,FW': {
-    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'xG']
+    PRIMARY: ['Min', 'MP', 'Gls', 'Ast', 'Tkl', 'xG']
   }
 };
 
@@ -62,15 +104,35 @@ type ResultItem = {
   league?: string;
   marketValue?: string | null;
   similarity?: number;
-  // Stats
+  // Stats de base
   Min?: number;
   MP?: number;
   Gls?: number;
   Ast?: number;
   xG?: number;
+  '90s'?: number;
+  // Stats gardien
   CS?: number;
   'Save%'?: number;
   'PSxG+/-'?: number;
+  SoTA?: number;
+  // Stats défense
+  Tkl?: number;
+  Int?: number;
+  Blocks?: number;
+  Clr?: number;
+  // Stats creation/passing
+  KP?: number;
+  xAG?: number;
+  SCA?: number;
+  PrgP?: number;
+  'Cmp%'?: number;
+  // Stats attaque
+  SoT?: number;
+  'SoT%'?: number;
+  'Sh/90'?: number;
+  'G/Sh'?: number;
+  npxG?: number;
 };
 
 type ApiResponse = {
@@ -124,32 +186,7 @@ function StatCard({ label, value, unit = "" }: {
   );
 }
 
-// Normalise les données venant de ton API (format différent du CSV)
-function normalizePlayerData(player: any): ResultItem {
-  console.log('Données brutes reçues:', player); // Debug
 
-  return {
-    name: player.name || player.Player || "",
-    // CORRECTION : API retourne "position" pas "Pos"
-    pos: player.position || player.pos || player.Pos || "",
-    age: Number(player.age || player.Age) || undefined,
-    club: player.club || player.Squad || "",
-    league: player.league || player.Comp || "",
-    // CORRECTION : API retourne "marketValue" 
-    marketValue: player.marketValue || player.market_value || player['market_value'] || null,
-    // CORRECTION : API retourne "score" pas "similarity"
-    similarity: player.score || player.similarity,
-    // Stats basées sur vos colonnes CSV exactes
-    Min: Number(player.Min) || undefined,
-    MP: Number(player.MP) || undefined,
-    Gls: Number(player.Gls) || undefined,
-    Ast: Number(player.Ast) || undefined,
-    xG: Number(player.xG) || undefined,
-    CS: Number(player.CS) || undefined,
-    'Save%': Number(player['Save%']) || undefined,
-    'PSxG+/-': Number(player['PSxG+/-']) || undefined
-  };
-}
 
 function getStatsForPosition(player: ResultItem, position?: string) {
   const pos = position || player.pos;
@@ -172,9 +209,19 @@ function getStatLabel(key: string) {
     'Gls': 'Goals',
     'Ast': 'Assists',
     'xG': 'xG',
+    '90s': '90s',
     'CS': 'Clean Sheets',
     'Save%': 'Save %',
-    'PSxG+/-': 'PSxG +/-'
+    'PSxG+/-': 'PSxG +/-',
+    'SoTA': 'SoTA',
+    'Tkl': 'Tackles',
+    'Int': 'Interceptions',
+    'KP': 'Key Passes',
+    'xAG': 'xAG',
+    'SCA': 'SCA',
+    'PrgP': 'Progressive Passes',
+    'SoT': 'SoT',
+    'Cmp%': 'Pass %'
   };
   return labels[key as keyof typeof labels] || key;
 }
@@ -736,7 +783,8 @@ export default function Results() {
               
               {/* More filters link positionné sous Value */}
               <div className="mt-3 flex">
-                <div className="w-32"></div> {/* Espaceur pour aligner avec le 2e input */}
+                <div className="w-24"></div> {/* Espaceur pour aligner avec le 2e input */}
+                <span className="text-gray-500 w-4 text-center">-</span>
                 <div className="w-24 flex justify-start">
                   <button
                     onClick={() => setMoreFiltersOpen(true)}
@@ -846,7 +894,7 @@ export default function Results() {
                                         }));
                                       }
                                     }}
-                                    className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center"
+                                    className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center"
                                   />
                                   {stat.isPercentage && <span className="text-gray-500 text-sm">%</span>}
                                   
@@ -920,55 +968,89 @@ export default function Results() {
             {filtered.map((p) => {
               const playerStats = getStatsForPosition(p, p.pos);
               
+              // Calcul du dégradé selon le % de match
+              const similarity = p.similarity || 0;
+              const getBorderColor = (sim: number) => {
+                if (sim >= 90) return 'border-teal-500';
+                if (sim >= 75) return 'border-cyan-400'; 
+                if (sim >= 60) return 'border-yellow-400';
+                return 'border-gray-300';
+              };
+              
               return (
                 <div
                   key={p.name}
-                  className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
+                  className={`bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow border-l-4 ${getBorderColor(similarity)}`}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={photoFor(p.name)}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/players/default.jpg";
-                        }}
-                        alt={p.name}
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
-                      <div>
-                        <h3 className="font-bold text-gray-900">{p.name}</h3>
-                        <div className="text-sm text-gray-600">
-                          {p.pos && <span>{getPositionLabel(p.pos)}</span>}
-                          {p.age && <span> • {p.age} years</span>}
-                        </div>
-                        <div className="text-sm font-semibold text-blue-600">
-                          {formatMarketValue(p.marketValue)}
-                        </div>
+                  {/* Header horizontal avec badge à droite */}
+                  <div className="flex items-start gap-4 mb-6">
+                    <img
+                      src={photoFor(p.name)}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/players/default.jpg";
+                      }}
+                      alt={p.name}
+                      className="h-16 w-16 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">{p.name}</h3>
+                      {/* Ligne infos comme hero : age + poste + club + ligue */}
+                      <div className="text-sm text-gray-600 mb-2">
+                        {p.age && <span className="font-medium">{p.age} years</span>}
+                        {p.pos && p.age && <span> • </span>}
+                        {p.pos && <span className="font-medium">{getPositionLabel(p.pos)}</span>}
+                        {p.club && (p.age || p.pos) && <span> • </span>}
+                        {p.club && <span>{p.club}</span>}
+                        {p.league && (p.age || p.pos || p.club) && <span> • </span>}
+                        {p.league && <span>{p.league.replace(/^[a-z]{2,3}\s+/i, '')}</span>}
+                      </div>
+                      {/* Prix */}
+                      <div className="text-sm font-semibold text-teal-600">
+                        {formatMarketValue(p.marketValue).replace('Û', '€')}
                       </div>
                     </div>
-                    <div className="bg-teal-500 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-sm">
-                      {pct(p.similarity)}
+                    {/* Badge similarité grand à droite */}
+                    <div className="flex items-center h-12">
+                      <div className="bg-teal-500 text-white px-4 py-3 rounded-xl font-bold text-lg shadow-sm">
+                        {pct(p.similarity)}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Stats du joueur */}
-                  <div className="grid grid-cols-3 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
-                    {playerStats.slice(0, 3).map((stat) => (
-                      <StatCard
-                        key={stat.key}
-                        label={stat.label}
-                        value={stat.value}
-                        unit={stat.unit}
-                      />
-                    ))}
+                  {/* Stats principales - 2 lignes de 3 */}
+                  <div className="space-y-3 mb-4">
+                    {/* Première ligne */}
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      {playerStats.slice(0, 3).map((stat) => (
+                        <div key={stat.key}>
+                          <div className="text-lg font-bold text-gray-900">
+                            {`${stat.value || 0}${stat.unit}`}
+                          </div>
+                          <div className="text-xs text-gray-500">{stat.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Deuxième ligne */}
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      {playerStats.slice(3, 6).map((stat) => (
+                        <div key={stat.key}>
+                          <div className="text-lg font-bold text-gray-900">
+                            {`${stat.value || 0}${stat.unit}`}
+                          </div>
+                          <div className="text-xs text-gray-500">{stat.label}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="text-right">
+                  {/* Footer */}
+                  <div className="flex justify-end items-center">
                     <Link
                       to={`/player/${encodeURIComponent(p.name)}`}
-                      className="text-teal-600 hover:text-teal-700 font-semibold text-sm"
+                      className="text-teal-600 hover:text-teal-700 font-semibold text-sm transition-colors"
                     >
-                      View details →
+                      Details →
                     </Link>
                   </div>
                 </div>
